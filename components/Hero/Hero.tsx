@@ -1,5 +1,4 @@
 "use client";
-'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
@@ -16,9 +15,7 @@ const STROKE_WIDTH = 3.8982;
 
 export default function Hero() {
   const heroRef = useRef<HTMLElement | null>(null);
-  const logoWrapperRef = useRef<HTMLDivElement | null>(null);
-  const logoPathRef = useRef<SVGGeometryElement | null>(null);
-  const pathRefs = useRef<(SVGGeometryElement | null)[]>([]);
+  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const [modelVisible, setModelVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const infoRevealRef = useRef({ left: false, right: false });
@@ -26,69 +23,50 @@ export default function Hero() {
   useEffect(() => {
     if (!heroRef.current) return;
 
+    // --- GSAP: intro (texto) ---
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     tl.from('.hero__title .line', { yPercent: 120, duration: 0.9, stagger: 0.06 }, 0)
       .from('.hero__sub', { y: 20, opacity: 0, duration: 0.6 }, 0.35);
 
-    if (logoWrapperRef.current) {
-      gsap.set(logoWrapperRef.current, { transformOrigin: '50% 50%', rotation: 0 });
-    }
+    // --- Animación de entrada de SVGs (secuencial) ---
+    const svgPaths = pathRefs.current.filter(Boolean) as SVGPathElement[];
 
-    // --- SVG intro animation ---
-    const logoPath = logoPathRef.current;
-    const iconPaths = pathRefs.current.filter(Boolean) as SVGGeometryElement[];
-    const svgPaths = [logoPath, ...iconPaths].filter(Boolean) as SVGGeometryElement[];
-
-    const preparePath = (element: SVGGeometryElement) => {
-      const length = element.getTotalLength();
-      element.setAttribute('fill', 'none');
-      element.setAttribute('stroke', STROKE_COLOR);
-      element.setAttribute('stroke-width', String(STROKE_WIDTH));
-      element.style.strokeDasharray = String(length);
-      element.style.strokeDashoffset = String(length);
+    const preparePath = (p: SVGPathElement) => {
+      const len = p.getTotalLength();
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', STROKE_COLOR);
+      p.setAttribute('stroke-width', String(STROKE_WIDTH));
+      p.style.strokeDasharray = String(len);
+      p.style.strokeDashoffset = String(len);
     };
 
-    const solidifyPath = (element: SVGGeometryElement) => {
-      element.style.strokeDasharray = '';
-      element.style.strokeDashoffset = '';
-      if (element === logoPath) {
-        element.setAttribute('fill', 'none');
-        element.setAttribute('stroke', STROKE_COLOR);
-        element.setAttribute('stroke-width', String(STROKE_WIDTH));
-        element.setAttribute('stroke-opacity', '0.45');
-      } else {
-        element.removeAttribute('stroke');
-        element.removeAttribute('stroke-width');
-        element.removeAttribute('stroke-opacity');
-        element.setAttribute('fill', 'white');
-        element.setAttribute('fill-opacity', '0.25');
-      }
+    const solidifyPath = (p: SVGPathElement) => {
+      p.removeAttribute('stroke');
+      p.removeAttribute('stroke-width');
+      p.style.strokeDasharray = '';
+      p.style.strokeDashoffset = '';
+      p.setAttribute('fill', 'white');
     };
 
-    const highlightPath = (element: SVGGeometryElement) => {
-      element.setAttribute('fill', 'none');
-      element.removeAttribute('fill-opacity');
-      element.removeAttribute('stroke-opacity');
-      element.setAttribute('stroke', STROKE_COLOR);
-      element.setAttribute('stroke-width', String(STROKE_WIDTH));
+    const highlightPath = (p: SVGPathElement) => {
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', STROKE_COLOR);
+      p.setAttribute('stroke-width', String(STROKE_WIDTH));
     };
 
+    // Preparación inicial
     svgPaths.forEach(preparePath);
 
     const iconsTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-    if (logoPath) {
-      iconsTl.to(logoPath, { strokeDashoffset: 0, duration: 0.9 }, 0);
-      iconsTl.add(() => solidifyPath(logoPath));
-    }
-
-    iconPaths.forEach((element, index) => {
-      const position = index === 0 && !logoPath ? 0 : '>';
-      iconsTl.to(element, { strokeDashoffset: 0, duration: 0.7 }, position);
-      iconsTl.add(() => solidifyPath(element));
+    svgPaths.forEach((p, i) => {
+      const len = p.getTotalLength();
+      iconsTl.to(p, { strokeDashoffset: 0, duration: 0.7 }, i === 0 ? 0 : '>');
+      iconsTl.add(() => solidifyPath(p));
     });
 
+    // Al terminar todas las animaciones: resaltar el 4° SVG y mostrar el modelo
     iconsTl.add(() => {
-      const fourth = iconPaths[3];
+      const fourth = svgPaths[3];
       if (fourth) highlightPath(fourth);
       setModelVisible(true);
     });
@@ -133,21 +111,23 @@ export default function Hero() {
       scrub: 1,
       onUpdate: ({ progress }) => {
         setProgress(progress);
-        if (!infoRevealRef.current.left && progress > 0.05) {
+        const leftThreshold = 0.05;
+        const rightThreshold = 0.15;
+
+        if (!infoRevealRef.current.left && progress > leftThreshold) {
           infoRevealRef.current.left = true;
           gsap.to(infoTargets.left, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' });
+        } else if (infoRevealRef.current.left && progress <= leftThreshold - 0.02) {
+          infoRevealRef.current.left = false;
+          gsap.to(infoTargets.left, { opacity: 0, x: -32, duration: 0.45, ease: 'power2.inOut' });
         }
-        if (!infoRevealRef.current.right && progress > 0.15) {
+
+        if (!infoRevealRef.current.right && progress > rightThreshold) {
           infoRevealRef.current.right = true;
           gsap.to(infoTargets.right, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' });
-        }
-        if (logoWrapperRef.current) {
-          gsap.to(logoWrapperRef.current, {
-            rotation: progress * 360,
-            duration: 0.4,
-            ease: 'power2.out',
-            overwrite: true,
-          });
+        } else if (infoRevealRef.current.right && progress <= rightThreshold - 0.02) {
+          infoRevealRef.current.right = false;
+          gsap.to(infoTargets.right, { opacity: 0, x: 32, duration: 0.45, ease: 'power2.inOut' });
         }
       },
     });
@@ -155,36 +135,23 @@ export default function Hero() {
     // Respeta reduce-motion
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) {
-      svgPaths.forEach((element) => solidifyPath(element));
-      const fourth = iconPaths[3];
+      svgPaths.forEach((p) => solidifyPath(p));
+      const fourth = svgPaths[3];
       if (fourth) highlightPath(fourth);
       setModelVisible(true);
       tl.progress(1);
-      iconsTl.progress(1);
-      iconsTl.kill();
       st.disable();
       lenis.destroy();
       gsap.set([infoTargets.left, infoTargets.right], { opacity: 1, x: 0 });
       infoRevealRef.current = { left: true, right: true };
-      if (logoWrapperRef.current) {
-        gsap.set(logoWrapperRef.current, { rotation: 0 });
-      }
     }
 
     return () => {
       cancelAnimationFrame(rafScrollId);
-      iconsTl.kill();
-      tl.kill();
-      st.kill();
       ScrollTrigger.getAll().forEach((s) => s.kill());
       lenis.destroy();
     };
   }, []);
-
-  const halfIndex = Math.floor(ICONS.length / 2);
-  const firstIcons = ICONS.slice(0, halfIndex);
-  const secondIcons = ICONS.slice(halfIndex);
-  pathRefs.current.length = ICONS.length;
 
   return (
     <section className="hero relative overflow-hidden" ref={heroRef}>
@@ -197,9 +164,9 @@ export default function Hero() {
         <div className="top min-h-3/6 flex flex-col justify-center items-center w-full">
           <div className="transition1">
             <div className="flex justify-center items-center gap-2.5">
-              {firstIcons.map((icon, idx) => (
+              {ICONS.map((icon, idx) => (
                 <svg
-                  key={`icon-left-${idx}`}
+                  key={idx}
                   xmlns="http://www.w3.org/2000/svg"
                   width={icon.width}
                   height={icon.height}
@@ -211,57 +178,10 @@ export default function Hero() {
                       pathRefs.current[idx] = el;
                     }}
                     d={icon.d}
-                    fill="none"
+                    fill="white"
                   />
                 </svg>
               ))}
-              <div
-                ref={logoWrapperRef}
-                className="hero__logo-wrapper flex items-center justify-center"
-                style={{ width: '180px', height: '140px' }}
-              >
-                <svg
-                  className="hero__logo"
-                  viewBox="0 0 747 656"
-                  width="150"
-                  height="130"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect
-                    ref={(el) => {
-                      logoPathRef.current = el;
-                    }}
-                    x="8"
-                    y="8"
-                    width="731"
-                    height="640"
-                    rx="48"
-                    fill="none"
-                  />
-                </svg>
-              </div>
-              {secondIcons.map((icon, idx) => {
-                const globalIndex = idx + firstIcons.length;
-                return (
-                  <svg
-                    key={`icon-right-${globalIndex}`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={icon.width}
-                    height={icon.height}
-                    viewBox={icon.viewBox}
-                    fill="none"
-                  >
-                    <path
-                      ref={(el) => {
-                        pathRefs.current[globalIndex] = el;
-                      }}
-                      d={icon.d}
-                      fill="none"
-                    />
-                  </svg>
-                );
-              })}
             </div>
           </div>
         </div>
@@ -293,6 +213,3 @@ export default function Hero() {
     </section>
   );
 }
-
-
-
