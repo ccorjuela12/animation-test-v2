@@ -106,7 +106,7 @@ export default function Hero() {
     const st = ScrollTrigger.create({
       trigger: heroRef.current!,
       start: 'top top',
-      end: 'bottom+=150% top',
+      end: 'bottom+=1000% top', // Ajusta este offset para ampliar el recorrido y mostrar todas las im�genes.
       pin: true,
       scrub: 1,
       onUpdate: ({ progress }) => {
@@ -213,3 +213,4 @@ export default function Hero() {
     </section>
   );
 }
+

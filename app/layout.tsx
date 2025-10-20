@@ -1,3 +1,4 @@
+import Header from '@/components/globals/Header';
 import './globals.css';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
@@ -23,7 +24,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
-      <body className={`${unisonPro.variable} ${unisonLight.variable}`}>{children}</body>
+      <body className={`${unisonPro.variable} ${unisonLight.variable}`}>
+        <Header/>
+        {children}
+      </body>
     </html>
   );
 }

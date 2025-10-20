@@ -8,6 +8,7 @@ module.exports = {
       colors: {
         primary: '#CAFF1D',
         background: '#0B0A10',
+        neutral600: '#D4D4D4'
       },
       animation: {
         'fade-in': 'fade-in .5s ease-out both',
