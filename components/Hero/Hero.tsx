@@ -115,6 +115,7 @@ export default function Hero() {
         setProgress(progress);
         const leftThreshold = 0.05;
         const rightThreshold = 0.15;
+        console.log('Progreso actual:', progress);
 
         if (!infoRevealRef.current.left && progress > leftThreshold) {
           infoRevealRef.current.left = true;
