@@ -19,6 +19,7 @@ export default function Hero() {
   const [modelVisible, setModelVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const infoRevealRef = useRef({ left: false, right: false });
+  const [startGridAnimation, setStartGridAnimation] = useState(false);
 
   useEffect(() => {
     if (!heroRef.current) return;
@@ -69,6 +70,7 @@ export default function Hero() {
       const fourth = svgPaths[3];
       if (fourth) highlightPath(fourth);
       setModelVisible(true);
+      setStartGridAnimation(true);
     });
 
     // --- Lenis + ScrollTrigger (pin + scrub) ---
@@ -106,7 +108,7 @@ export default function Hero() {
     const st = ScrollTrigger.create({
       trigger: heroRef.current!,
       start: 'top top',
-      end: 'bottom+=1000% top', // Ajusta este offset para ampliar el recorrido y mostrar todas las im�genes.
+      end: 'bottom+=250% top', // Ajusta este offset para ampliar el recorrido y mostrar todas las im�genes.
       pin: true,
       scrub: 1,
       onUpdate: ({ progress }) => {
@@ -156,7 +158,7 @@ export default function Hero() {
   return (
     <section className="hero relative overflow-hidden" ref={heroRef}>
       <div className="hero__canvas absolute inset-0 z-0">
-        <GridCanvas className="h-full w-full" />
+        <GridCanvas className="h-full w-full" animateIn={startGridAnimation} scrollProgress={progress} />
       </div>
       {/* Textura oculta hasta terminar animación de entrada */}
       {/* <CircleModel visible={modelVisible} progress={progress} /> */}
@@ -178,7 +180,7 @@ export default function Hero() {
                       pathRefs.current[idx] = el;
                     }}
                     d={icon.d}
-                    fill="white"
+                    fill="none"
                   />
                 </svg>
               ))}
