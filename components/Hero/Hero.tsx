@@ -12,10 +12,16 @@ gsap.registerPlugin(ScrollTrigger);
 
 const STROKE_COLOR = '#CAFF1D';
 const STROKE_WIDTH = 3.8982;
+const UNDRAW_START_THRESHOLD = 0.85;
+const UNDRAW_RESET_THRESHOLD = 0.75;
 
 export default function Hero() {
   const heroRef = useRef<HTMLElement | null>(null);
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+  const pathLengthsRef = useRef<number[]>([]);
+  const undrawTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const undrawTriggeredRef = useRef(false);
+  const iconsReadyRef = useRef(false);
   const [modelVisible, setModelVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const infoRevealRef = useRef({ left: false, right: false });
@@ -32,8 +38,7 @@ export default function Hero() {
     // --- Animación de entrada de SVGs (secuencial) ---
     const svgPaths = pathRefs.current.filter(Boolean) as SVGPathElement[];
 
-    const preparePath = (p: SVGPathElement) => {
-      const len = p.getTotalLength();
+    const preparePath = (p: SVGPathElement, len: number) => {
       p.setAttribute('fill', 'none');
       p.setAttribute('stroke', STROKE_COLOR);
       p.setAttribute('stroke-width', String(STROKE_WIDTH));
@@ -47,20 +52,26 @@ export default function Hero() {
       p.style.strokeDasharray = '';
       p.style.strokeDashoffset = '';
       p.setAttribute('fill', 'white');
+      p.style.opacity = '1';
     };
 
     const highlightPath = (p: SVGPathElement) => {
       p.setAttribute('fill', 'none');
       p.setAttribute('stroke', STROKE_COLOR);
       p.setAttribute('stroke-width', String(STROKE_WIDTH));
+      p.style.opacity = '1';
     };
 
     // Preparación inicial
-    svgPaths.forEach(preparePath);
+    svgPaths.forEach((path, index) => {
+      const len = path.getTotalLength();
+      pathLengthsRef.current[index] = len;
+      preparePath(path, len);
+    });
 
     const iconsTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     svgPaths.forEach((p, i) => {
-      const len = p.getTotalLength();
+      const len = pathLengthsRef.current[i];
       iconsTl.to(p, { strokeDashoffset: 0, duration: 0.7 }, i === 0 ? 0 : '>');
       iconsTl.add(() => solidifyPath(p));
     });
@@ -71,7 +82,61 @@ export default function Hero() {
       if (fourth) highlightPath(fourth);
       setModelVisible(true);
       setStartGridAnimation(true);
+      iconsReadyRef.current = true;
     });
+
+    const undrawIcons = () => {
+      if (!iconsReadyRef.current || !svgPaths.length) return;
+      undrawTimelineRef.current?.kill();
+      const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
+      const reversedPaths = [...svgPaths].reverse();
+      reversedPaths.forEach((path, reverseIndex) => {
+        const originalIndex = svgPaths.length - 1 - reverseIndex;
+        const len = pathLengthsRef.current[originalIndex] ?? path.getTotalLength();
+        const delay = reverseIndex * 0.18;
+        tl.add(() => {
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', STROKE_COLOR);
+          path.setAttribute('stroke-width', String(STROKE_WIDTH));
+          path.style.strokeDasharray = String(len);
+          path.style.strokeDashoffset = '0';
+          path.style.opacity = '1';
+        }, delay);
+        tl.to(path, { strokeDashoffset: len, duration: 0.6 }, delay);
+        tl.to(path, { opacity: 0, duration: 0.4 }, delay + 0.35);
+      });
+      undrawTimelineRef.current = tl;
+    };
+
+    const redrawIcons = () => {
+      undrawTimelineRef.current?.kill();
+      undrawTimelineRef.current = null;
+      if (!iconsReadyRef.current || !svgPaths.length) return;
+      const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+      svgPaths.forEach((path, index) => {
+        const len = pathLengthsRef.current[index] ?? path.getTotalLength();
+        const delay = index * 0.18;
+        tl.add(() => {
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', STROKE_COLOR);
+          path.setAttribute('stroke-width', String(STROKE_WIDTH));
+          path.style.opacity = '1';
+          path.style.strokeDasharray = String(len);
+          path.style.strokeDashoffset = String(len);
+        }, delay);
+        tl.to(path, { strokeDashoffset: 0, duration: 0.6 }, delay);
+        tl.add(() => {
+          solidifyPath(path);
+          path.style.strokeDasharray = '';
+          path.style.strokeDashoffset = '';
+        }, delay + 0.6);
+      });
+      tl.add(() => {
+        const fourth = svgPaths[3];
+        if (fourth) highlightPath(fourth);
+      });
+      undrawTimelineRef.current = tl;
+    };
 
     // --- Lenis + ScrollTrigger (pin + scrub) ---
     const lenis = new Lenis({ lerp: 0.12 });
@@ -115,7 +180,6 @@ export default function Hero() {
         setProgress(progress);
         const leftThreshold = 0.05;
         const rightThreshold = 0.15;
-        console.log('Progreso actual:', progress);
 
         if (!infoRevealRef.current.left && progress > leftThreshold) {
           infoRevealRef.current.left = true;
@@ -132,6 +196,20 @@ export default function Hero() {
           infoRevealRef.current.right = false;
           gsap.to(infoTargets.right, { opacity: 0, x: 32, duration: 0.45, ease: 'power2.inOut' });
         }
+
+        if (iconsReadyRef.current) {
+          if (!undrawTriggeredRef.current && progress >= UNDRAW_START_THRESHOLD) {
+            undrawTriggeredRef.current = true;
+            undrawIcons();
+            gsap.to(infoTargets.left, { opacity: 0, x: -32, duration: 0.45, ease: 'power2.inOut' });
+            gsap.to(infoTargets.right, { opacity: 0, x: 32, duration: 0.45, ease: 'power2.inOut' })
+          } else if (undrawTriggeredRef.current && progress <= UNDRAW_RESET_THRESHOLD) {
+            undrawTriggeredRef.current = false;
+            redrawIcons();
+            gsap.to(infoTargets.left, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' })
+            gsap.to(infoTargets.right, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' });
+          }
+        }
       },
     });
 
@@ -147,12 +225,15 @@ export default function Hero() {
       lenis.destroy();
       gsap.set([infoTargets.left, infoTargets.right], { opacity: 1, x: 0 });
       infoRevealRef.current = { left: true, right: true };
+      iconsReadyRef.current = true;
     }
 
     return () => {
       cancelAnimationFrame(rafScrollId);
       ScrollTrigger.getAll().forEach((s) => s.kill());
       lenis.destroy();
+      undrawTimelineRef.current?.kill();
+      undrawTimelineRef.current = null;
     };
   }, []);
 
