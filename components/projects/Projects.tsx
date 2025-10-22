@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 type Slide = {
   id: string;
   category: string;
@@ -62,145 +64,249 @@ const SLIDES: Slide[] = [
 ];
 
 export default function Projects() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const progressFillRef = useRef<HTMLDivElement | null>(null);
+  const amberRef = useRef<HTMLDivElement | null>(null);
+  const [isActive, setIsActive] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const showHeader = progress >= 0.11;
+  const showImages = progress >= 0.20;
+  const getRowItemStyle = (i: number): React.CSSProperties => {
+    const revealStart = 0.42; // 42% de scroll
+    const itemStep = 0.03; // separación entre items
+    const span = 0.06; // ancho de la rampa de aparición por item
+    const start = revealStart + i * itemStep;
+    const tRaw = (progress - start) / span;
+    const t = Math.max(0, Math.min(1, tRaw));
+    const y = (1 - t) * 8; // px
+    return {
+      opacity: t,
+      transform: `translateY(${y}px)`,
+      willChange: 'opacity, transform',
+    };
+  };
+
   const defaultIndex = 0;
   const total = SLIDES.length;
   const current = SLIDES[defaultIndex];
   const previous = SLIDES[(defaultIndex - 1 + total) % total];
   const next = SLIDES[(defaultIndex + 1) % total];
 
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsActive(entry.isIntersecting);
+      },
+      {
+        rootMargin: "-10% 0px",
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const updateProgress = () => {
+      const rect = node.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || 1;
+      const totalDistance = rect.height + viewportHeight;
+      const visible = Math.min(
+        Math.max((viewportHeight - rect.top) / totalDistance, 0),
+        1,
+      );
+      setProgress(Number(visible.toFixed(3)));
+      if (progressFillRef.current) {
+        progressFillRef.current.style.transform = `scaleY(${visible})`;
+      }
+      if (amberRef.current) {
+        const t = Math.max(0, (visible - 0.01) / 0.95); // arranca al 5%
+        const r = 180 * t; // radio en %
+        amberRef.current.style.setProperty("--r", `${r}%`);
+        amberRef.current.style.opacity = String(1 - t);
+      }
+    };
+
+    updateProgress();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
+
+    return () => {
+      window.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
+  }, []);
+
+
+  
   return (
-    <section className="section relative overflow-hidden py-24 md:py-32">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "radial-gradient(rgba(202,255,29,0.12) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute inset-x-0 top-12 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-        <div className="absolute inset-y-0 left-[10%] w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-        <div className="absolute inset-y-0 right-[6%] w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+    <section ref={sectionRef} className="section relative overflow-hidden bg-transparent">
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-center gap-3 md:flex transition-opacity duration-500 ${isActive ? "opacity-100" : "opacity-0"}`}
+      >
+        <span className="text-xs uppercase tracking-[0.3rem] text-white/40">
+          Scroll
+        </span>
+        <div className="relative h-32 w-[2px] overflow-hidden rounded-full bg-white/10">
+          <div
+            ref={progressFillRef}
+            className="absolute inset-x-0 bottom-0 h-full origin-bottom rounded-full bg-primary transition-transform duration-200 ease-out"
+            style={{ transform: `scaleY(${progress})` }}
+          />
+        </div>
+        <span className="text-xs font-light text-white/40">
+          {Math.round(progress * 100)}%
+        </span>
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col justify-between gap-12 px-6 py-16">
-        <header className="flex flex-col gap-4 container items-center">
-          <p className="text-xs uppercase tracking-[0.7rem] text-primary">
-            Projects
-          </p>
-          <h2 className="font-bold text-4xl md:text-6xl leading-tight tracking-[0.55rem] text-white">
-            PROJ
-            <span className="relative inline-block px-4 text-primary">
-              <span className="absolute inset-0 rounded-full border border-primary/60 blur-[2px]" />
-              <span className="relative">E</span>
-            </span>
-            CTS
-          </h2>
-        </header>
+      <div className="relative overflow-hidden py-12 md:py-24">
+        <div
+          ref={amberRef}
+          className="absolute inset-0 z-20 pointer-events-none"
+          style={{
+            background: "#000000",
+            WebkitMaskImage:
+              "radial-gradient(circle at 50% 0%, transparent var(--r, 0%), black calc(var(--r, 0%) + 1px))",
+            maskImage:
+              "radial-gradient(circle at 50% 0%, transparent var(--r, 0%), black calc(var(--r, 0%) + 1px))",
+            opacity: 1,
+          } as React.CSSProperties}
+        />
 
-        <div className="relative w-full mt-16 flex flex-1 items-center justify-center">
-          <div className="relative h-[60vh] w-full max-w-[1400px] min-h-[420px] md:h-[72vh]">
-            <div
-              aria-hidden
-              className="group absolute left-0 top-[28%] z-10 w-[36vw] min-w-[220px] max-w-[480px] overflow-hidden rounded-[32px] border border-white/10 bg-white/5/40 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.6)]"
-              style={{
-                transform: "translate(-92%, -50%) rotate(-2deg)",
-                transformOrigin: "center right",
-              }}
-            >
-              <img
-                src={previous.preview}
-                alt={previous.title}
-                className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-black/20" />
-            </div>
+        <div className="relative z-10 flex flex-col justify-between gap-30 px-6 py-5">
+          {/*Title*/}
+          <header
+            className={`container flex flex-col items-center gap-4 transition-all duration-700 ease-out ${
+              isActive && showHeader ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+            }`}
+          >
+            <p className="text-xs uppercase tracking-[0.7rem] text-primary">
+              Projects
+            </p>
+            <h2 className="font-bold text-4xl md:text-6xl leading-tight tracking-[0.55rem] text-white">
+              PROJ
+              <span className="relative inline-block px-4 text-primary">
+                <span className="absolute inset-0 rounded-full border border-primary/60 blur-[2px]" />
+                <span className="relative">E</span>
+              </span>
+              CTS
+            </h2>
+          </header>
 
-            <article className="absolute left-1/2 top-1/2 z-20 w-[60vw] min-w-[320px] max-w-[900px] -translate-x-1/2 -translate-y-1/2">
-              <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute -top-[130px] left-1/2 h-[140%] w-[140%] -translate-x-1/2">
+            {/*Slider*/}
+          <div
+            className={`relative  flex w-full flex-1 items-center justify-center transition-all duration-700 ease-out delay-150 ${
+              isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+            }`}
+          >
+            <div className="relative h-[60vh] w-full max-w-[1400px] min-h-[420px] md:h-[42vh]">
+              <div
+                aria-hidden
+                className={`border-b-2 border-[#CAFF1D] group absolute left-0 top-[28%] z-10 w-[36vw] min-w-[220px] max-w-[480px] overflow-hidden rounded-[32px] bg-white/5/40 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.6)] transition-opacity duration-700 ${showImages ? "opacity-100" : "opacity-0"}`}
+                style={{
+                  transform: "translate(-92%, -50%) rotate(-2deg)",
+                  transformOrigin: "center right",
+                }}
+              >
+                <div className={`relative h-full w-full transition-transform duration-700 ease-out ${showImages ? 'scale-100' : 'scale-95'}`}>
                   <img
-                    src="/logo_o.svg"
-                    alt=""
-                    aria-hidden
-                    className="h-full w-full opacity-[0.2]"
+                    src={previous.preview}
+                    alt={previous.title}
+                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
+                    loading="lazy"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-black/20" />
                 </div>
               </div>
-              <div className="absolute -inset-[9%] rounded-[90px] border border-primary/40 opacity-30 blur-xl" />
-              <figure className="relative aspect-[16/10] overflow-hidden rounded-[42px] border border-white/15 bg-white/5 shadow-[0_45px_120px_-35px_rgba(202,255,29,0.6)]">
-                <img
-                  src={current.media}
-                  alt={current.title}
-                  className="h-full w-full object-cover transition duration-500"
-                  key={current.id}
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/40" />
-                <div className="pointer-events-none absolute inset-x-12 bottom-8 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
-              </figure>
-              <div className="absolute -bottom-10 left-1/2 h-12 w-[68%] -translate-x-1/2 rounded-full border border-primary/30 blur-lg" />
-            </article>
 
-            <div
-              aria-hidden
-              className="group absolute right-0 top-[72%] z-10 w-[36vw] min-w-[220px] max-w-[480px] overflow-hidden rounded-[32px] border border-white/10 bg-white/5/40 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.6)]"
-              style={{
-                transform: "translate(92%, -50%) rotate(3deg)",
-                transformOrigin: "center left",
-              }}
-            >
-              <img
-                src={next.preview}
-                alt={next.title}
-                className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
+              <article className="absolute left-1/2 top-1/2 z-20 w-[60vw] min-w-[320px] max-w-[900px] -translate-x-1/2 -translate-y-1/2">
+                <div className="pointer-events-none absolute inset-0 -z-10">
+                  <div className="absolute -top-[130px] left-1/2 h-[140%] w-[140%] -translate-x-1/2">
+                    <img
+                      src="/logo_o.svg"
+                      alt=""
+                      aria-hidden
+                      className="h-full w-full opacity-[0.2]"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -inset-[9%] rounded-[90px] border border-primary/40 opacity-30 blur-xl" />
+                <figure className={`border-b-2 border-[#CAFF1D] relative aspect-[16/10] overflow-hidden rounded-[42px] bg-white/5 shadow-[0_45px_120px_-35px_rgba(202,255,29,0.6)] transition-opacity duration-700 ${showImages ? "opacity-100" : "opacity-0"}`}>
+                  <div className={`relative h-full w-full transition-transform duration-700 ease-out ${showImages ? 'scale-100' : 'scale-95'}`}>
+                    <img
+                      src={current.media}
+                      alt={current.title}
+                      className="h-full w-full object-cover transition duration-500"
+                      key={current.id}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/40" />
+                    <div className="pointer-events-none absolute inset-x-12 bottom-8 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+                  </div>
+                </figure>
+                <div className="absolute -bottom-10 left-1/2 h-12 w-[68%] -translate-x-1/2 rounded-full border border-primary/30 blur-lg" />
+              </article>
+
+              <div
+                aria-hidden
+                className={`border-b-2 border-[#CAFF1D] group absolute right-0 top-[72%] z-10 w-[36vw] min-w-[220px] max-w-[480px] overflow-hidden rounded-[32px] bg-white/5/40 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.6)] transition-opacity duration-700 ${showImages ? "opacity-100" : "opacity-0"}`}
+                style={{
+                  transform: "translate(92%, -50%) rotate(3deg)",
+                  transformOrigin: "center left",
+                }}
+              >
+                <div className={`relative h-full w-full transition-transform duration-700 ease-out ${showImages ? 'scale-100' : 'scale-95'}`}>
+                  <img
+                    src={next.preview}
+                    alt={next.title}
+                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="container mx-auto">
+          <div
+            className={`container mx-auto transition-all duration-700 ease-out delay-300 ${
+              isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+            }`}
+          >
             <div className="mt-16 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-                <div className="max-w-xl">
-                    <p className="text-xs uppercase tracking-[0.35rem] text-primary">
-                    {current.category}
-                    </p>
-                    <h3 className="mt-4 text-3xl font-semibold text-white md:text-4xl">
-                    {current.title}
-                    </h3>
-                    <p className="mt-4 text-base text-white/80">{current.description}</p>
-                </div>
-                <button
-                    type="button"
-                    className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-8 py-3 text-sm uppercase tracking-[0.4rem] transition hover:border-primary/70 hover:bg-primary/10"
-                >
-                    {current.cta}
-                    <span className="text-lg transition group-hover:translate-x-1">
-                    &#10142;
-                    </span>
-                </button>
+              <div className="max-w-xl">
+                <p className="text-xs uppercase tracking-[0.35rem] text-primary">
+                  {current.category}
+                </p>
+                <h3 className="mt-4 text-3xl font-semibold text-white md:text-4xl">
+                  {current.title}
+                </h3>
+                <p className="mt-4 text-base text-white/80">
+                  {current.description}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-8 py-3 text-sm uppercase tracking-[0.4rem] transition hover:border-primary/70 hover:bg-primary/10"
+              >
+                {current.cta}
+                <span className="text-lg transition group-hover:translate-x-1">
+                  &#10142;
+                </span>
+              </button>
             </div>
-        </div>
+          </div>
 
-        <div className="mt-12 flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.3rem] text-white/50">
-          {SLIDES.map((slide, index) => (
-            <span
-              key={slide.id}
-              className={`relative flex items-center gap-2 ${
-                index === defaultIndex ? "text-primary" : ""
-              }`}
-            >
-              <span className="h-px w-6 bg-current" />
-              {index + 1 < 10 ? `0${index + 1}` : index + 1}
-            </span>
-          ))}
-          <span className="ml-auto text-white/40">
-            View more projects &#10140;
-          </span>
+          
         </div>
       </div>
     </section>

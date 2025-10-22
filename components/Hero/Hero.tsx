@@ -72,7 +72,7 @@ export default function Hero() {
     const iconsTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     svgPaths.forEach((p, i) => {
       const len = pathLengthsRef.current[i];
-      iconsTl.to(p, { strokeDashoffset: 0, duration: 0.7 }, i === 0 ? 0 : '>');
+      iconsTl.to(p, { strokeDashoffset: 0, duration: 0.4 }, i === 0 ? 0 : '>');
       iconsTl.add(() => solidifyPath(p));
     });
 

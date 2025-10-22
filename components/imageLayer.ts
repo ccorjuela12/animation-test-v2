@@ -49,8 +49,8 @@ const IMAGE_FRAGMENT_SHADER = /* glsl */ `
       vec2 n2 = distort(gl_FragCoord.xy) / uResolution;
       vec2 delta = n2 - n;
       vec2 uv = cover(vUv + delta, vec2(1.0), uTexRes);
-      vec3 col = texture2D(uTex, uv).rgb;
-      gl_FragColor = vec4(col, uAlpha);
+      vec4 texel = texture2D(uTex, uv);
+      gl_FragColor = vec4(texel.rgb, texel.a * uAlpha);
   }
 `;
 
@@ -225,7 +225,7 @@ export function createImageLayer({ scene, camera, uniforms, animateIn }: CreateI
     layoutImages();
 
     imageMaterials.forEach((mat, i) => {
-      gsap.to(mat.uniforms.uAlpha, { value: 0.7, duration: 1.2, delay: i * 0.15, ease: 'power2.out' });
+      gsap.to(mat.uniforms.uAlpha, { value: 0.3, duration: 1.2, delay: i * 0.15, ease: 'power2.out' });
     });
   };
 
