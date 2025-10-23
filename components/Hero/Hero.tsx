@@ -146,6 +146,9 @@ export default function Hero() {
       rafScrollId = requestAnimationFrame(raf);
     };
     rafScrollId = requestAnimationFrame(raf);
+    // Exponer instancia global para secciones que sincronizan con Lenis (e.g., Projects)
+    // @ts-ignore
+    (window as any).lenis = lenis;
 
     ScrollTrigger.scrollerProxy(document.body, {
       scrollTop(value?: number) {
@@ -222,6 +225,11 @@ export default function Hero() {
       setModelVisible(true);
       tl.progress(1);
       st.disable();
+      // @ts-ignore
+      if ((window as any).lenis === lenis) {
+        // @ts-ignore
+        delete (window as any).lenis;
+      }
       lenis.destroy();
       gsap.set([infoTargets.left, infoTargets.right], { opacity: 1, x: 0 });
       infoRevealRef.current = { left: true, right: true };
@@ -231,6 +239,11 @@ export default function Hero() {
     return () => {
       cancelAnimationFrame(rafScrollId);
       ScrollTrigger.getAll().forEach((s) => s.kill());
+      // @ts-ignore
+      if ((window as any).lenis === lenis) {
+        // @ts-ignore
+        delete (window as any).lenis;
+      }
       lenis.destroy();
       undrawTimelineRef.current?.kill();
       undrawTimelineRef.current = null;

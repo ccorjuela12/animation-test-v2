@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type Slide = {
   id: string;
@@ -67,6 +67,19 @@ export default function Projects() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const progressFillRef = useRef<HTMLDivElement | null>(null);
   const amberRef = useRef<HTMLDivElement | null>(null);
+  const activeFrameRef = useRef<HTMLDivElement | null>(null);
+  const activeFigureRef = useRef<HTMLElement | null>(null);
+  const prevOverflowRef = useRef<string>("");
+  const measuredScaleRef = useRef<number>(1.5);
+  const [pinned, setPinned] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [phase, setPhase] = useState<"expand" | "contract">("expand");
+  const [phaseT, setPhaseT] = useState(0); // 0..1 dentro de la fase actual
+  const [completedCount, setCompletedCount] = useState(0);
+  const visitedRef = useRef<Set<number>>(new Set());
+  const phaseRef = useRef<"expand" | "contract">("expand");
+  const phaseTRef = useRef(0);
+  const activeIndexRef = useRef(0);
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const showHeader = progress >= 0.11;
@@ -86,11 +99,10 @@ export default function Projects() {
     };
   };
 
-  const defaultIndex = 0;
   const total = SLIDES.length;
-  const current = SLIDES[defaultIndex];
-  const previous = SLIDES[(defaultIndex - 1 + total) % total];
-  const next = SLIDES[(defaultIndex + 1) % total];
+  const current = SLIDES[activeIndex];
+  const previous = SLIDES[(activeIndex - 1 + total) % total];
+  const next = SLIDES[(activeIndex + 1) % total];
 
   useEffect(() => {
     const node = sectionRef.current;
@@ -110,6 +122,129 @@ export default function Projects() {
 
     return () => observer.disconnect();
   }, []);
+
+  // Medir escala necesaria para fullscreen (aprox) del frame activo
+  useLayoutEffect(() => {
+    const el = activeFigureRef.current || activeFrameRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const vw = Math.max(window.innerWidth, 1);
+      const vh = Math.max(window.innerHeight, 1);
+      const scaleX = vw / Math.max(rect.width, 1);
+      const scaleY = vh / Math.max(rect.height, 1);
+      measuredScaleRef.current = Math.min(2.5, Math.max(scaleX, scaleY) * 1.02);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [activeIndex]);
+
+  // Detectar cuando la sección queda al tope para pin interno
+  useEffect(() => {
+    const onScroll = () => {
+      const node = sectionRef.current;
+      if (!node) return;
+      const rect = node.getBoundingClientRect();
+      const atTop = rect.top <= 0.5 && rect.bottom - 1 > window.innerHeight;
+      setPinned(atTop);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Mantener refs sincronizados para handlers estables
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { phaseTRef.current = phaseT; }, [phaseT]);
+  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
+
+  // Capturar rueda cuando está pinneado y conducir la animación por fases (handlers estables)
+  useEffect(() => {
+    if (!pinned) return;
+    const sensitivity = 0.001; // más bajo = más suave
+    const totalSlides = total;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY;
+      const dir = delta > 0 ? 1 : -1;
+      let t = phaseTRef.current + Math.abs(delta) * sensitivity;
+      if (t >= 1) {
+        if (phaseRef.current === "expand") {
+          phaseRef.current = "contract";
+          setPhase("contract");
+          phaseTRef.current = 0;
+          setPhaseT(0);
+        } else {
+          // Termina contract → rotar
+          const nextIndex = (activeIndexRef.current + (dir > 0 ? 1 : totalSlides - 1)) % totalSlides;
+          activeIndexRef.current = nextIndex;
+          setActiveIndex(nextIndex);
+          visitedRef.current.add(nextIndex);
+          setCompletedCount(visitedRef.current.size);
+          phaseRef.current = "expand";
+          setPhase("expand");
+          phaseTRef.current = 0;
+          setPhaseT(0);
+          // Si ya visitamos todos, liberar scroll
+          if (visitedRef.current.size >= totalSlides) {
+            const winAny = window as any;
+            const lenis: any = winAny.lenis;
+            if (lenis && typeof lenis.start === 'function') {
+              lenis.start();
+              if (typeof lenis.scrollTo === 'function') {
+                lenis.scrollTo(window.scrollY + 2, { immediate: true });
+              }
+            } else {
+              document.body.style.overflow = prevOverflowRef.current;
+              window.scrollBy(0, 2);
+            }
+            setPinned(false);
+          }
+        }
+      } else {
+        phaseTRef.current = t;
+        setPhaseT(t);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown" || e.key === "PageDown") {
+        e.preventDefault();
+        const t = Math.min(1, phaseTRef.current + 0.08);
+        phaseTRef.current = t;
+        setPhaseT(t);
+      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+        e.preventDefault();
+        const t = Math.max(0, phaseTRef.current - 0.08);
+        phaseTRef.current = t;
+        setPhaseT(t);
+      }
+    };
+    // Bloquear scroll de página usando Lenis si está disponible
+    const winAny = window as any;
+    const lenis: any = winAny.lenis;
+    prevOverflowRef.current = document.body.style.overflow;
+    if (lenis && typeof lenis.stop === 'function') {
+      lenis.stop();
+    } else {
+      document.body.style.overflow = "hidden";
+    }
+    // Reset de visitas al entrar en modo pinned
+    visitedRef.current = new Set([activeIndexRef.current]);
+    setCompletedCount(visitedRef.current.size);
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKey, { passive: false });
+    return () => {
+      if (lenis && typeof lenis.start === 'function') {
+        lenis.start();
+      } else {
+        document.body.style.overflow = prevOverflowRef.current;
+      }
+      window.removeEventListener("wheel", onWheel as any);
+      window.removeEventListener("keydown", onKey as any);
+    };
+  }, [pinned, total]);
 
   useEffect(() => {
     const node = sectionRef.current;
@@ -241,8 +376,18 @@ export default function Projects() {
                   </div>
                 </div>
                 <div className="absolute -inset-[9%] rounded-[90px] border border-primary/40 opacity-30 blur-xl" />
-                <figure className={`border-b-2 border-[#CAFF1D] relative aspect-[16/10] overflow-hidden rounded-[42px] bg-white/5 shadow-[0_45px_120px_-35px_rgba(202,255,29,0.6)] transition-opacity duration-700 ${showImages ? "opacity-100" : "opacity-0"}`}>
-                  <div className={`relative h-full w-full transition-transform duration-700 ease-out ${showImages ? 'scale-100' : 'scale-95'}`}>
+                <figure
+                  ref={activeFigureRef as any}
+                  className={`border-b-2 border-[#CAFF1D] relative aspect-[16/10] overflow-hidden bg-white/5 shadow-[0_45px_120px_-35px_rgba(202,255,29,0.6)] ${showImages ? "opacity-100" : "opacity-0"}`}
+                  style={{
+                    borderRadius: `${Math.max(0, 42 * (phase === 'expand' ? 1 - phaseT : phaseT))}px`,
+                    transform: `scale(${phase === 'expand' ? (1 + (measuredScaleRef.current - 1) * phaseT) : (1 + (measuredScaleRef.current - 1) * (1 - phaseT))})`,
+                    transformOrigin: 'center center',
+                    transition: 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+                    willChange: 'transform'
+                  }}
+                >
+                  <div ref={activeFrameRef} className={`relative h-full w-full`}>
                     <img
                       src={current.media}
                       alt={current.title}
