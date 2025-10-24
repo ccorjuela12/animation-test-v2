@@ -1,15 +1,11 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import type { MutableRefObject } from 'react'
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
-import {
-  MathUtils,
-  type Group,
-  
-} from 'three'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { MathUtils, type Group, type Mesh, type Material } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
-import { Center, Image as DreiImage, Environment, Sparkles } from '@react-three/drei'
+import { Center, Image as DreiImage } from '@react-three/drei'
 import ModelText from './model_text'
 import IgniteEmitter from './ignite_emiter'
 import CanvasLoader from './canvas_loader'
@@ -22,10 +18,12 @@ const ROTATION_RANGE = Math.PI / 4
 type SceneProps = {
   rotationTarget: MutableRefObject<number>
   scrollProgress: MutableRefObject<number>
+  emitterVisibility: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget, scrollProgress }: SceneProps) {
+function Scene({ rotationTarget, scrollProgress, emitterVisibility }: SceneProps) {
   const groupRef = useRef<Group>(null)
+  const logoRef = useRef<Mesh>(null)
 
   useFrame(() => {
     if (!groupRef.current) {
@@ -37,17 +35,37 @@ function Scene({ rotationTarget, scrollProgress }: SceneProps) {
       rotationTarget.current,
       0.075,
     )
+
+    const fadeStart = 0.75
+    const fadeEnd = 0.95
+    const fade = MathUtils.smoothstep(scrollProgress.current, fadeStart, fadeEnd)
+    const visibility = 1 - fade
+    emitterVisibility.current = visibility
+
+    if (logoRef.current && logoRef.current.material) {
+      const materials = Array.isArray(logoRef.current.material)
+        ? (logoRef.current.material as Material[])
+        : [logoRef.current.material as Material]
+
+      materials.forEach((material) => {
+        if ('opacity' in material) {
+          material.transparent = true
+          material.opacity = visibility
+          material.needsUpdate = true
+        }
+      })
+    }
   })
 
   return (
     <>
       <group ref={groupRef}>
         <BackgroundTexture />
-        <IgniteEmitter color="#FF4000" />
+        <IgniteEmitter color="#FF4000" visibilityRef={emitterVisibility} />
         <ModelText />
       </group>
       <Center position={[0, 0.1, -0.4]}>
-        <DreiImage url="/logo.png" transparent opacity={1} scale={[5, 1]} />
+        <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
     </>
   )
@@ -60,6 +78,7 @@ type AnimationCanvasProps = {
 export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const scrollProgress = useRef(0)
+  const emitterVisibility = useRef(1)
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -113,7 +132,11 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
   return (
     <Canvas camera={{ position: [0, 0.1, 2] }}>
       <Suspense fallback={<CanvasLoader />}>
-        <Scene rotationTarget={rotationTarget} scrollProgress={scrollProgress} />
+        <Scene
+          rotationTarget={rotationTarget}
+          scrollProgress={scrollProgress}
+          emitterVisibility={emitterVisibility}
+        />
       </Suspense>
     </Canvas>
   )

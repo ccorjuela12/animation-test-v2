@@ -80,7 +80,6 @@ export default function Page() {
       scrub: true,
       onUpdate: (self) => {
         const progress = gsap.utils.clamp(0, 1, self.progress)
-        console.log(progress)
         setSegment(heroTextLeft.current, heroRevealConfig.left, 'left', progress)
         setSegment(heroTextRight.current, heroRevealConfig.right, 'right', progress)
 
@@ -119,7 +118,7 @@ export default function Page() {
     <>
       <ScrollProgressBar />
       <main ref={containerRef} className="relative min-h-[280vh] bg-black text-white">
-        <div ref={heroSectionRef} className="pointer-events-none h-screen w-full hero">
+        <div ref={heroSectionRef} className="pointer-events-none h-screen top-0 left-0 w-full hero">
           <AnimationCanvas containerRef={containerRef} />
           <div className="bottom absolute bottom-10 w-full">
             <div ref={heroInfoRef} className="hero__info container mb-4 flex flex-row items-center justify-between space-x-2 opacity-0">
