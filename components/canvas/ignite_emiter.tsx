@@ -38,7 +38,7 @@ export default function IgniteEmitter({ color = '#ff7a00' }) {
 
       {/* Halo aditivo sin rayos */}
       <Billboard>
-        <mesh scale={[1.5, 1.5, 1]} position={[0, 0, -0.05]}>
+        <mesh scale={[3, 3, 1]} position={[0, 0, -0.05]}>
           <planeGeometry args={[1, 1]} />
           <shaderMaterial
             transparent

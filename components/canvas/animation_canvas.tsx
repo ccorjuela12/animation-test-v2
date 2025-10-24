@@ -1,13 +1,15 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import type { MutableRefObject } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { MathUtils, type Group } from 'three'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
+import {
+  MathUtils,
+  type Group,
+  
+} from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
-import { Center, Image } from '@react-three/drei'
-
-
+import { Center, Image as DreiImage, Environment, Sparkles } from '@react-three/drei'
 import ModelText from './model_text'
 import IgniteEmitter from './ignite_emiter'
 import CanvasLoader from './canvas_loader'
@@ -19,9 +21,10 @@ const ROTATION_RANGE = Math.PI / 4
 
 type SceneProps = {
   rotationTarget: MutableRefObject<number>
+  scrollProgress: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget }: SceneProps) {
+function Scene({ rotationTarget, scrollProgress }: SceneProps) {
   const groupRef = useRef<Group>(null)
 
   useFrame(() => {
@@ -40,11 +43,11 @@ function Scene({ rotationTarget }: SceneProps) {
     <>
       <group ref={groupRef}>
         <BackgroundTexture />
-        <IgniteEmitter color="#ff7a00" />
+        <IgniteEmitter color="#FF4000" />
         <ModelText />
       </group>
       <Center position={[0, 0.1, -0.4]}>
-        <Image url="/logo.png" transparent opacity={1} scale={[5, 1]} />
+        <DreiImage url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
     </>
   )
@@ -56,6 +59,7 @@ type AnimationCanvasProps = {
 
 export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
+  const scrollProgress = useRef(0)
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -93,6 +97,7 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
             ROTATION_RANGE,
             self.progress,
           )
+          scrollProgress.current = self.progress
         },
       })
     }, containerRef)
@@ -108,7 +113,7 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
   return (
     <Canvas camera={{ position: [0, 0.1, 2] }}>
       <Suspense fallback={<CanvasLoader />}>
-        <Scene rotationTarget={rotationTarget} />
+        <Scene rotationTarget={rotationTarget} scrollProgress={scrollProgress} />
       </Suspense>
     </Canvas>
   )
