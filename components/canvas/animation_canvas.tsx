@@ -1,0 +1,115 @@
+import { Suspense, useEffect, useRef } from 'react'
+import type { MutableRefObject } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { MathUtils, type Group } from 'three'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
+import { Center, Image } from '@react-three/drei'
+
+
+import ModelText from './model_text'
+import IgniteEmitter from './ignite_emiter'
+import CanvasLoader from './canvas_loader'
+import BackgroundTexture from './background_texture'
+
+gsap.registerPlugin(ScrollTrigger)
+
+const ROTATION_RANGE = Math.PI / 4
+
+type SceneProps = {
+  rotationTarget: MutableRefObject<number>
+}
+
+function Scene({ rotationTarget }: SceneProps) {
+  const groupRef = useRef<Group>(null)
+
+  useFrame(() => {
+    if (!groupRef.current) {
+      return
+    }
+
+    groupRef.current.rotation.y = MathUtils.lerp(
+      groupRef.current.rotation.y,
+      rotationTarget.current,
+      0.075,
+    )
+  })
+
+  return (
+    <>
+      <group ref={groupRef}>
+        <BackgroundTexture />
+        <IgniteEmitter color="#ff7a00" />
+        <ModelText />
+      </group>
+      <Center position={[0, 0.1, -0.4]}>
+        <Image url="/logo.png" transparent opacity={1} scale={[5, 1]} />
+      </Center>
+    </>
+  )
+}
+
+type AnimationCanvasProps = {
+  containerRef: MutableRefObject<HTMLDivElement | null>
+}
+
+export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) {
+  const rotationTarget = useRef(0)
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return
+    }
+
+    const lenis = new Lenis({
+      duration: 1.15,
+      smoothWheel: true,
+    })
+
+    const updateScrollTrigger = () => {
+      ScrollTrigger.update()
+    }
+
+    lenis.on('scroll', updateScrollTrigger)
+
+    const updateLenis = (time: number) => {
+      lenis.raf(time * 1000)
+    }
+
+    gsap.ticker.add(updateLenis)
+
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: containerRef.current,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true,
+        onUpdate: (self) => {
+          rotationTarget.current = gsap.utils.mapRange(
+            0,
+            1,
+            0,
+            ROTATION_RANGE,
+            self.progress,
+          )
+        },
+      })
+    }, containerRef)
+
+    return () => {
+      ctx.revert()
+      gsap.ticker.remove(updateLenis)
+      lenis.off('scroll', updateScrollTrigger)
+      lenis.destroy()
+    }
+  }, [containerRef])
+
+  return (
+    <Canvas camera={{ position: [0, 0.1, 2] }}>
+      <Suspense fallback={<CanvasLoader />}>
+        <Scene rotationTarget={rotationTarget} />
+      </Suspense>
+    </Canvas>
+  )
+}
