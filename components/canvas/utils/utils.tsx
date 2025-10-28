@@ -13,6 +13,7 @@ type RoundedVideoPlaneProps = GroupProps & {
   borderColor?: string
   borderSize?: number
   borderFeather?: number
+  opacity?: number
 }
 
 export function RoundedVideoPlane({
@@ -23,6 +24,7 @@ export function RoundedVideoPlane({
   borderColor = '#ffffff',
   borderSize = 0.12,
   borderFeather = 0.02,
+  opacity = 1,
   ...props
 }: RoundedVideoPlaneProps) {
   const geometry = useMemo<THREE.ShapeGeometry>(() => {
@@ -101,7 +103,12 @@ export function RoundedVideoPlane({
   return (
     <group {...props}>
       <mesh geometry={geometry} renderOrder={1}>
-        <meshBasicMaterial map={map} toneMapped={false} />
+        <meshBasicMaterial
+          map={map}
+          toneMapped={false}
+          transparent={opacity < 1}
+          opacity={opacity}
+        />
       </mesh>
       {borderTexture && (
         <mesh geometry={geometry} position={[0, 0, 0.0001]} renderOrder={2}>
@@ -111,6 +118,7 @@ export function RoundedVideoPlane({
             transparent
             alphaMap={borderTexture}
             depthWrite={false}
+            opacity={opacity}
           />
         </mesh>
       )}

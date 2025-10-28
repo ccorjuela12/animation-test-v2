@@ -1,20 +1,14 @@
 ### Prompt para Codex/Copilot — **Agregar imágenes desplazándose en X con el scroll (sin tocar la grid existente)**
 
-Abre **`components/projects/Projects.tsx`** elimina lo actual ejecuta las siguientes instrucciones.
+Ya deje componetizado las dos secciones que tenemos actualmente, la idea es con scroll ir mostrando el flujo de los textos e ir iterando las animaciones.
 
 **Instrucciones**
-
-* Creemos un slider el cual tenga de aun slide, pero que en laterales muestre el anterior y el siguiente aprenas 10px.
-* Cuando la secion entre agregemos una animacion del contenido ingrese desde arriba, usando el prgreso del slider.
-* El slider debe accionarse desde el scroll para hacer animaciones  pasar al siguiente.
-* el slider tiene video, titulo, descripcion y boton, esta animacion debe ser de la siguiente manera:
-  1) ingresa el video en pantalla.
-  2) ingresa el titulo.
-  3) ingresa decripcion.
-  4) ingresa boton.
-  5) el progreso tambien debe ser con el scroll.
-* una vez ingresen todos los items del slider, cuando hagamos scroll el video debe aumentar su tamano a pantalla completa con el scroll e ir avanzando unas fraciones el video sincronizado con el scroll.
-* cuando termine apantlla completa aun seguria el scroll debe ya alejar el video y pasar al siguinte slider con la misma animacion.
+*  las animacionaes deben funcionar de la siguiente manera:
+  * aparece el hero (**animation_canvas.tsx**) con el texto scroll to explore, como esta en este debemos mostrar el texto cuando se cargue la pagina con una animacion de entrada.
+  * a medida que avanza el scroll llega el **HeroFooterText.tsx** cuando este toque el viewport de arriba debe anclar el scroll y mostrar los textos una vez termine de mostrar todos los textos secuencialmente soltar el scroll y ocultar el Image del canvas.
+  * a medida que avanza el scroll llega el **SliderTextContent.tsx** cuando este toque el viewport de arriba debe anclar el scroll y aparecer como esta el slider.
+    * el slider debe quedar encima del **modelText**.
+    * los textos deben ir animando de primero despues el segundo la idea es que cada vez que entra un video nuevo, vaya mostrando el texto.
 
 **resultado esperado**
 * Animacion de transicion entre una seccion y otra.
@@ -22,4 +16,4 @@ Abre **`components/projects/Projects.tsx`** elimina lo actual ejecuta las siguie
 * archivo result.md con resultado de la ejecucion, complicaciones, descripcion de lo ejecutado e instrucciones de implementacion.
 
 **herramientas**
-usa gsap animaciones, si requieres 3d utiliza react/fiber react/drei (solo si es necesario no cre que se requiera), estilos usa tailwind (si requieres lgo mas especifico usa css puro en el archivo del proyecto y deja un comentario).
+usa gsap animaciones y lenis para controlar el scroll.

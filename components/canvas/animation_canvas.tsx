@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef } from 'react'
 import type { MutableRefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { MathUtils, type Group, type Mesh, type Material } from 'three'
+import { MathUtils, type Group, type Material, type Mesh } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
@@ -15,34 +15,43 @@ import SliderProjects from './SliderProjects'
 
 gsap.registerPlugin(ScrollTrigger)
 
+export const HERO_SCROLL_MARKS = {
+  primaryLeft: { start: 0.12, span: 0.32 },
+  primaryRight: { start: 0.18, span: 0.32 },
+  secondaryLeft: { start: 0.38, span: 0.28 },
+  secondaryRight: { start: 0.44, span: 0.28 },
+  primaryFadeStart: 0.6,
+  primaryFadeEnd: 0.74,
+  sliderRevealStart: 0.74,
+  sliderRevealEnd: 0.95,
+} as const
+
 const ROTATION_RANGE = Math.PI / 4
 
 type SceneProps = {
   rotationTarget: MutableRefObject<number>
-  scrollProgress: MutableRefObject<number>
-  emitterVisibility: MutableRefObject<number>
+  logoVisibility: MutableRefObject<number>
+  sliderReveal: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget, scrollProgress, emitterVisibility }: SceneProps) {
+function Scene({ rotationTarget, logoVisibility, sliderReveal }: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
+  const smoothedLogo = useRef(1)
 
-  useFrame(() => {
-    if (!groupRef.current) {
-      return
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = MathUtils.lerp(
+        groupRef.current.rotation.y,
+        rotationTarget.current,
+        0.075,
+      )
     }
 
-    groupRef.current.rotation.y = MathUtils.lerp(
-      groupRef.current.rotation.y,
-      rotationTarget.current,
-      0.075,
-    )
-
-    const fadeStart = 0.75
-    const fadeEnd = 0.95
-    const fade = MathUtils.smoothstep(scrollProgress.current, fadeStart, fadeEnd)
-    const visibility = 1 - fade
-    emitterVisibility.current = visibility
+    const targetVisibility = MathUtils.clamp(logoVisibility.current, 0, 1)
+    const smoothing = 1 - Math.exp(-delta * 6)
+    smoothedLogo.current += (targetVisibility - smoothedLogo.current) * smoothing
+    const visibility = MathUtils.clamp(smoothedLogo.current, 0, 1)
 
     if (logoRef.current && logoRef.current.material) {
       const materials = Array.isArray(logoRef.current.material)
@@ -50,12 +59,12 @@ function Scene({ rotationTarget, scrollProgress, emitterVisibility }: SceneProps
         : [logoRef.current.material as Material]
 
       materials.forEach((material) => {
-        if ('opacity' in material) {
-          material.transparent = true
-          material.opacity = visibility
-          material.needsUpdate = true
-        }
+        material.transparent = true
+        material.opacity = visibility
+        material.needsUpdate = true
       })
+
+      logoRef.current.visible = visibility > 0.04
     }
   })
 
@@ -68,6 +77,7 @@ function Scene({ rotationTarget, scrollProgress, emitterVisibility }: SceneProps
       <Center position={[0, 0.1, -0.4]}>
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
+      <SliderProjects revealRef={sliderReveal} />
     </>
   )
 }
@@ -78,16 +88,18 @@ type AnimationCanvasProps = {
 
 export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
-  const scrollProgress = useRef(0)
+  const logoVisibility = useRef(1)
+  const sliderReveal = useRef(0)
   const emitterVisibility = useRef(1)
 
   useEffect(() => {
-    if (!containerRef.current) {
+    const container = containerRef.current
+    if (!container) {
       return
     }
 
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 1.1,
       smoothWheel: true,
     })
 
@@ -105,19 +117,26 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
-        trigger: containerRef.current,
+        trigger: container,
         start: 'top top',
         end: 'bottom bottom',
         scrub: true,
         onUpdate: (self) => {
-          rotationTarget.current = gsap.utils.mapRange(
+          const progress = MathUtils.clamp(self.progress, 0, 1)
+          rotationTarget.current = gsap.utils.mapRange(0, 1, 0, ROTATION_RANGE, progress)
+
+          const sliderPhase = gsap.utils.clamp(
             0,
             1,
-            0,
-            ROTATION_RANGE,
-            self.progress,
+            gsap.utils.normalize(
+              HERO_SCROLL_MARKS.sliderRevealStart,
+              HERO_SCROLL_MARKS.sliderRevealEnd,
+              progress,
+            ),
           )
-          scrollProgress.current = self.progress
+
+          sliderReveal.current = sliderPhase
+          logoVisibility.current = 1 - sliderPhase
         },
       })
     }, containerRef)
@@ -131,14 +150,14 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
   }, [containerRef])
 
   return (
-    <Canvas camera={{ position: [0, 0.1, 2] }}>
+    <Canvas camera={{ position: [0, 0.1, 2.15] }} className="h-full w-full">
       <Suspense fallback={null}>
         <Scene
           rotationTarget={rotationTarget}
-          scrollProgress={scrollProgress}
-          emitterVisibility={emitterVisibility}
+          logoVisibility={logoVisibility}
+          sliderReveal={sliderReveal}
         />
-        {/* <SliderProjects/> */}
+        {/* <IgniteEmitter visibilityRef={emitterVisibility} /> */}
       </Suspense>
     </Canvas>
   )

@@ -1,7 +1,8 @@
 'use client'
 
-import AnimationCanvas from '@/components/canvas/animation_canvas'
+import AnimationCanvas, { HERO_SCROLL_MARKS } from '@/components/canvas/animation_canvas'
 import CanvasLoader from '@/components/canvas/canvas_loader'
+import ContentPage from '@/components/Content'
 import ScrollProgressBar from '@/components/ui/ScrollProgressBar'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -15,10 +16,18 @@ type SegmentConfig = {
 }
 
 const heroRevealConfig: Record<'left' | 'right', SegmentConfig> = {
-  /** Ajusta estos porcentajes (0 a 1) para controlar el punto de entrada */
-  left: { start: 0.4, span: 0.5 },
-  right: { start: 0.42, span: 0.5 },
+  left: HERO_SCROLL_MARKS.primaryLeft,
+  right: HERO_SCROLL_MARKS.primaryRight,
 }
+
+const secondaryRevealConfig: Record<'left' | 'right', SegmentConfig> = {
+  left: HERO_SCROLL_MARKS.secondaryLeft,
+  right: HERO_SCROLL_MARKS.secondaryRight,
+}
+
+const TEXT_FADE_START = HERO_SCROLL_MARKS.primaryFadeStart
+const TEXT_FADE_END = HERO_SCROLL_MARKS.primaryFadeEnd
+const SCROLL_PROMPT_OFFSET = 24
 
 export default function Page() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -26,16 +35,14 @@ export default function Page() {
   const heroTextLeft = useRef<HTMLDivElement>(null)
   const heroTextRight = useRef<HTMLDivElement>(null)
   const heroScroll = useRef<HTMLParagraphElement>(null)
-  const heroSectionRef = useRef<HTMLDivElement>(null)
+  const heroSectionRef = useRef<HTMLElement>(null)
+  const heroSecondaryRef = useRef<HTMLDivElement>(null)
+  const heroSecondaryLeft = useRef<HTMLDivElement>(null)
+  const heroSecondaryRight = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) {
-      return
-    }
-
-    const heroSection = heroSectionRef.current
-    if (!heroSection) {
       return
     }
 
@@ -72,7 +79,9 @@ export default function Page() {
     }
 
     gsap.set([heroTextLeft.current, heroTextRight.current, heroScroll.current], { opacity: 0 })
-    gsap.set(heroInfoRef.current, { opacity: 1 })
+    gsap.set(heroInfoRef.current, { opacity: 1, pointerEvents: 'auto' })
+    gsap.set(heroSecondaryRef.current, { opacity: 0, pointerEvents: 'none' })
+    gsap.set([heroSecondaryLeft.current, heroSecondaryRight.current], { opacity: 0 })
 
     const heroTrigger = ScrollTrigger.create({
       trigger: container,
@@ -83,34 +92,47 @@ export default function Page() {
         const progress = gsap.utils.clamp(0, 1, self.progress)
         setSegment(heroTextLeft.current, heroRevealConfig.left, 'left', progress)
         setSegment(heroTextRight.current, heroRevealConfig.right, 'right', progress)
+        setSegment(heroSecondaryLeft.current, secondaryRevealConfig.left, 'left', progress)
+        setSegment(heroSecondaryRight.current, secondaryRevealConfig.right, 'right', progress)
 
-        const fadeOutProgress = gsap.utils.clamp(0, 1, (progress - 0.75) / 0.15)
+        const fadeOutProgress = gsap.utils.clamp(
+          0,
+          1,
+          gsap.utils.normalize(TEXT_FADE_START, TEXT_FADE_END, progress),
+        )
         const fadeOpacity = 1 - fadeOutProgress
+        const secondaryProgress = gsap.utils.clamp(
+          0,
+          1,
+          gsap.utils.normalize(
+            secondaryRevealConfig.left.start,
+            secondaryRevealConfig.left.start + secondaryRevealConfig.left.span,
+            progress,
+          ),
+        )
 
-        gsap.set(heroInfoRef.current, { opacity: fadeOpacity })
+        gsap.set(heroInfoRef.current, {
+          opacity: fadeOpacity,
+          pointerEvents: fadeOpacity > 0.05 ? 'auto' : 'none',
+        })
         gsap.set(heroScroll.current, {
           opacity: fadeOpacity,
-          y: gsap.utils.interpolate(0, 24, fadeOutProgress),
+          y: gsap.utils.interpolate(0, SCROLL_PROMPT_OFFSET, fadeOutProgress),
+        })
+        gsap.set(heroSecondaryRef.current, {
+          opacity: secondaryProgress,
+          pointerEvents: secondaryProgress > 0.05 ? 'auto' : 'none',
         })
       },
     })
 
-    const heroPin = ScrollTrigger.create({
-      trigger: container,
-      start: 'top top',
-      end: 'bottom top',
-      pin: heroSection,
-    })
-
     const handleResize = () => {
       heroTrigger.refresh()
-      heroPin.refresh()
     }
     window.addEventListener('resize', handleResize)
 
     return () => {
       heroTrigger.kill()
-      heroPin.kill()
       window.removeEventListener('resize', handleResize)
     }
   }, [])
@@ -119,37 +141,22 @@ export default function Page() {
     <>
       <CanvasLoader />
       <ScrollProgressBar />
-      <main ref={containerRef} className="relative min-h-[280vh] bg-black text-white">
-        <div ref={heroSectionRef} className="pointer-events-none h-screen top-0 left-0 w-full hero">
-          <AnimationCanvas containerRef={containerRef} />
-          <div className="bottom absolute bottom-10 w-full">
-            <div ref={heroInfoRef} className="hero__info container mb-4 flex flex-row items-center justify-between space-x-2 opacity-0">
-              <div ref={heroTextLeft} className="hero__info-left max-w-fit">
-                <span className="h2 mb-4 rounded-4xl border border-primary py-2 px-4">Your story, </span>
-                <br />
-                <h2 className="mt-2 px-4 text-left font-light">
-                  reinvented
-                  <br /> through AI.
-                </h2>
-              </div>
-              <div ref={heroTextRight} className="hero__info-right max-w-96 flex flex-col items-start gap-2">
-                <div className="h-2 w-7 rounded bg-primary" />
-                <p className="max-w-96 text-left">
-                  At <b>STUDIO</b>, we merge artificial intelligence and creativity to craft videos that captivate, adapt, and resonate.
-                </p>
-              </div>
-            </div>
-            <p ref={heroScroll} className="hero__sub pt-12 text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="16" viewBox="0 0 11 16" fill="none" className="m-auto">
-                <path d="M5.35156 1.42188L0.703125 6.0625L0 5.35938L5.35156 0L10.7031 5.35938L10 6.0625L5.35156 1.42188ZM5.35156 14L10 9.35938L10.7031 10.0625L5.35156 15.4219L0 10.0625L0.703125 9.35938L5.35156 14Z" fill="#FDFEFF" />
-              </svg>
-              scroll to explore
-            </p>
+      <main ref={containerRef} className="relative bg-black text-white">
+        <section ref={heroSectionRef} className="relative h-[320vh] w-full hero">
+          <div className="fixed top-0 h-screen w-full">
+            <AnimationCanvas containerRef={containerRef} />
+            <p
+                ref={heroScroll}
+                className="hero__sub pointer-events-auto absolute bottom-5 left-1/2 w-full -translate-x-1/2 pt-12 text-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="16" viewBox="0 0 11 16" fill="none" className="m-auto">
+                  <path d="M5.35156 1.42188L0.703125 6.0625L0 5.35938L5.35156 0L10.7031 5.35938L10 6.0625L5.35156 1.42188ZM5.35156 14L10 9.35938L10.7031 10.0625L5.35156 15.4219L0 10.0625L0.703125 9.35938L5.35156 14Z" fill="#FDFEFF" />
+                </svg>
+                scroll to explore
+              </p>
           </div>
-        </div>
-        <section className="relative flex h-screen items-center justify-center">
-          <p>top</p>
         </section>
+        <ContentPage/>
       </main>
     </>
   )
