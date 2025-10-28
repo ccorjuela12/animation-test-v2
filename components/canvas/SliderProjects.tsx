@@ -8,10 +8,10 @@ import * as THREE from 'three'
 import { RoundedVideoPlane } from './utils/utils'
 
 const CARD_COUNT = 6
-const CARD_GAP = 1.6
-const CARD_WIDTH = 1
-const CARD_HEIGHT = 0.56
-const CARD_RADIUS = 0.06
+const CARD_GAP = 1.7
+const CARD_WIDTH = 1.45
+const CARD_HEIGHT = 0.78
+const CARD_RADIUS = 0.08
 
 type SliderProjectsProps = {
   revealRef: MutableRefObject<number>
@@ -31,14 +31,17 @@ export default function SliderProjects({ revealRef }: SliderProjectsProps) {
     animatedRevealRef.current += (target - animatedRevealRef.current) * smoothing
     const reveal = THREE.MathUtils.smoothstep(animatedRevealRef.current, 0, 1)
 
-    const slideX = THREE.MathUtils.lerp(2.4, -0.4, reveal)
-    const slideZ = THREE.MathUtils.lerp(-1.2, -0.25, reveal)
-    const slideY = THREE.MathUtils.lerp(-0.05, 0, reveal)
-    const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-12, 0, reveal))
+    const slideX = THREE.MathUtils.lerp(16, -0.35, reveal)
+    const slideZ = THREE.MathUtils.lerp(1.8, 0.7, reveal)
+    const slideY = THREE.MathUtils.lerp(-0.05, 0.12, reveal)
+    const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, -2, reveal))
+    const scale = THREE.MathUtils.lerp(1.65, 1.35, reveal)
 
     groupRef.current.visible = reveal > 0.02
     groupRef.current.position.set(slideX, slideY, slideZ)
     groupRef.current.rotation.y = rotation
+    groupRef.current.scale.setScalar(scale)
+    groupRef.current.renderOrder = 20
 
     groupRef.current.children.forEach((child, index) => {
       const card = child as THREE.Group
@@ -124,7 +127,7 @@ function SliderCard({ positionX }: SliderCardProps) {
   }, [])
 
   return (
-    <group ref={cardRef} position={[positionX, 0, 0]} renderOrder={3}>
+    <group ref={cardRef} position={[positionX, 0, 0]} renderOrder={30}>
       <RoundedVideoPlane
         width={CARD_WIDTH}
         height={CARD_HEIGHT}

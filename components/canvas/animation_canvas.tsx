@@ -9,22 +9,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
 import { Center, Image as DreiImage } from '@react-three/drei'
 import ModelText from './model_text'
-import IgniteEmitter from './ignite_emiter'
+// import IgniteEmitter from './ignite_emiter'
 import BackgroundTexture from './background_texture'
 import SliderProjects from './SliderProjects'
+import IgniteEmitter from './ignite_emiter'
 
 gsap.registerPlugin(ScrollTrigger)
-
-export const HERO_SCROLL_MARKS = {
-  primaryLeft: { start: 0.12, span: 0.32 },
-  primaryRight: { start: 0.18, span: 0.32 },
-  secondaryLeft: { start: 0.38, span: 0.28 },
-  secondaryRight: { start: 0.44, span: 0.28 },
-  primaryFadeStart: 0.6,
-  primaryFadeEnd: 0.74,
-  sliderRevealStart: 0.74,
-  sliderRevealEnd: 0.95,
-} as const
 
 const ROTATION_RANGE = Math.PI / 4
 
@@ -84,13 +74,22 @@ function Scene({ rotationTarget, logoVisibility, sliderReveal }: SceneProps) {
 
 type AnimationCanvasProps = {
   containerRef: MutableRefObject<HTMLDivElement | null>
+  sliderRevealRef?: MutableRefObject<number>
+  logoVisibilityRef?: MutableRefObject<number>
 }
 
-export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) {
+export default function AnimationCanvas({
+  containerRef,
+  sliderRevealRef,
+  logoVisibilityRef,
+}: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
-  const logoVisibility = useRef(1)
-  const sliderReveal = useRef(0)
-  const emitterVisibility = useRef(1)
+  const internalSliderReveal = useRef(0)
+  const internalLogoVisibility = useRef(1)
+  const sliderReveal = sliderRevealRef ?? internalSliderReveal
+  const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
+  const usingExternalSlider = Boolean(sliderRevealRef)
+  const usingExternalLogo = Boolean(logoVisibilityRef)
 
   useEffect(() => {
     const container = containerRef.current
@@ -125,18 +124,13 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
           const progress = MathUtils.clamp(self.progress, 0, 1)
           rotationTarget.current = gsap.utils.mapRange(0, 1, 0, ROTATION_RANGE, progress)
 
-          const sliderPhase = gsap.utils.clamp(
-            0,
-            1,
-            gsap.utils.normalize(
-              HERO_SCROLL_MARKS.sliderRevealStart,
-              HERO_SCROLL_MARKS.sliderRevealEnd,
-              progress,
-            ),
-          )
+          if (!usingExternalSlider) {
+            sliderReveal.current = progress
+          }
 
-          sliderReveal.current = sliderPhase
-          logoVisibility.current = 1 - sliderPhase
+          if (!usingExternalLogo) {
+            logoVisibility.current = 1 - progress
+          }
         },
       })
     }, containerRef)
@@ -147,7 +141,7 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
       lenis.off('scroll', updateScrollTrigger)
       lenis.destroy()
     }
-  }, [containerRef])
+  }, [containerRef, logoVisibility, sliderReveal, usingExternalLogo, usingExternalSlider])
 
   return (
     <Canvas camera={{ position: [0, 0.1, 2.15] }} className="h-full w-full">
@@ -157,7 +151,7 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
           logoVisibility={logoVisibility}
           sliderReveal={sliderReveal}
         />
-        {/* <IgniteEmitter visibilityRef={emitterVisibility} /> */}
+        {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>
     </Canvas>
   )
