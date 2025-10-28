@@ -1,3 +1,5 @@
+"use client"
+
 import { Suspense, useEffect, useRef } from 'react'
 import type { MutableRefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
@@ -8,8 +10,8 @@ import Lenis from 'lenis'
 import { Center, Image as DreiImage } from '@react-three/drei'
 import ModelText from './model_text'
 import IgniteEmitter from './ignite_emiter'
-import CanvasLoader from './canvas_loader'
 import BackgroundTexture from './background_texture'
+import SliderProjects from './SliderProjects'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -61,7 +63,6 @@ function Scene({ rotationTarget, scrollProgress, emitterVisibility }: SceneProps
     <>
       <group ref={groupRef}>
         <BackgroundTexture />
-        <IgniteEmitter color="#FF4000" visibilityRef={emitterVisibility} />
         <ModelText />
       </group>
       <Center position={[0, 0.1, -0.4]}>
@@ -131,12 +132,13 @@ export default function AnimationCanvas({ containerRef }: AnimationCanvasProps) 
 
   return (
     <Canvas camera={{ position: [0, 0.1, 2] }}>
-      <Suspense fallback={<CanvasLoader />}>
+      <Suspense fallback={null}>
         <Scene
           rotationTarget={rotationTarget}
           scrollProgress={scrollProgress}
           emitterVisibility={emitterVisibility}
         />
+        {/* <SliderProjects/> */}
       </Suspense>
     </Canvas>
   )

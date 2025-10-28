@@ -87,15 +87,6 @@ export default function IgniteEmitter({ color = '#ff7a00', visibilityRef }: Igni
       lightformer.current.intensity = 3 * composite
     }
 
-    if (composer.current) {
-      composer.current.enabled = composite > 0.01
-    }
-
-    if (godRaysEffect.current) {
-      godRaysEffect.current.weight = 0.85 * composite
-      godRaysEffect.current.exposure = 0.32 * composite
-    }
-
     if (bloomEffect.current) {
       bloomEffect.current.intensity = 0.3 * composite
     }

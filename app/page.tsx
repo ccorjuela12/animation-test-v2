@@ -1,6 +1,7 @@
 'use client'
 
 import AnimationCanvas from '@/components/canvas/animation_canvas'
+import CanvasLoader from '@/components/canvas/canvas_loader'
 import ScrollProgressBar from '@/components/ui/ScrollProgressBar'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -116,6 +117,7 @@ export default function Page() {
 
   return (
     <>
+      <CanvasLoader />
       <ScrollProgressBar />
       <main ref={containerRef} className="relative min-h-[280vh] bg-black text-white">
         <div ref={heroSectionRef} className="pointer-events-none h-screen top-0 left-0 w-full hero">
