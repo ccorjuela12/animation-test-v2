@@ -23,9 +23,10 @@ type SceneProps = {
   logoVisibility: MutableRefObject<number>
   sliderReveal: MutableRefObject<number>
   sliderActive: MutableRefObject<number>
+  glowReveal: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive }: SceneProps) {
+function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive, glowReveal }: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
   const smoothedLogo = useRef(1)
@@ -64,7 +65,7 @@ function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive }: S
 
   return (
     <>
-      <BackgroundTexture />
+      <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} />
       <group ref={groupRef}>
         <ModelText />
       </group>
@@ -81,6 +82,7 @@ type AnimationCanvasProps = {
   sliderRevealRef?: MutableRefObject<number>
   logoVisibilityRef?: MutableRefObject<number>
   sliderActiveRef?: MutableRefObject<number>
+  glowRevealRef?: MutableRefObject<number>
 }
 
 export default function AnimationCanvas({
@@ -88,14 +90,17 @@ export default function AnimationCanvas({
   sliderRevealRef,
   logoVisibilityRef,
   sliderActiveRef,
+  glowRevealRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const internalSliderReveal = useRef(0)
   const internalLogoVisibility = useRef(1)
   const internalSliderActive = useRef(0)
+  const internalGlowReveal = useRef(0)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
   const sliderActive = sliderActiveRef ?? internalSliderActive
+  const glowReveal = glowRevealRef ?? internalGlowReveal
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
 
@@ -168,6 +173,7 @@ export default function AnimationCanvas({
           logoVisibility={logoVisibility}
           sliderReveal={sliderReveal}
           sliderActive={sliderActive}
+          glowReveal={glowReveal}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>

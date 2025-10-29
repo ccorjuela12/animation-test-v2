@@ -9,9 +9,10 @@ gsap.registerPlugin(ScrollTrigger)
 
 type HeroFooterTextProps = {
   logoVisibilityRef: MutableRefObject<number>
+  glowRevealRef: MutableRefObject<number>
 }
 
-export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProps) {
+export default function HeroFooterText({ logoVisibilityRef, glowRevealRef }: HeroFooterTextProps) {
   const sectionRef = useRef<HTMLElement | null>(null)
   const heroInfoRef = useRef<HTMLDivElement | null>(null)
   const heroTextLeft = useRef<HTMLDivElement | null>(null)
@@ -28,6 +29,7 @@ export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProp
 
     const logoProxy = { value: 1 }
     logoVisibilityRef.current = logoProxy.value
+    glowRevealRef.current = 0
 
     const ctx = gsap.context(() => {
       gsap.set(heroInfoRef.current, { autoAlpha: 0 })
@@ -35,7 +37,7 @@ export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProp
       gsap.set([heroTextLeft.current, heroTextRight.current], { autoAlpha: 0, y: 48 })
       gsap.set([heroSecondaryLeft.current, heroSecondaryRight.current], { autoAlpha: 0, y: 48 })
 
-      gsap.timeline({
+      const timeline = gsap.timeline({
         defaults: { ease: 'power2.out' },
         scrollTrigger: {
           trigger: section,
@@ -51,6 +53,7 @@ export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProp
           onLeaveBack: () => {
             logoProxy.value = 1
             logoVisibilityRef.current = 1
+            glowRevealRef.current = 0
           },
         },
       })
@@ -63,26 +66,35 @@ export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProp
         .to(heroSecondaryRef.current, { autoAlpha: 1, duration: 0.6 }, '>-0.1')
         .to(heroSecondaryLeft.current, { autoAlpha: 1, y: 0, duration: 0.8 }, '<')
         .to(heroSecondaryRight.current, { autoAlpha: 1, y: 0, duration: 0.8 }, '<0.1')
-        .to(
+        .to(heroSecondaryLeft.current, { autoAlpha: 0, y: -24, duration: 0.6, ease: 'power2.inOut' }, '+=0.35')
+        .to(heroSecondaryRight.current, { autoAlpha: 0, y: -24, duration: 0.6, ease: 'power2.inOut' }, '<')
+        .to(heroSecondaryRef.current, { autoAlpha: 0, duration: 0.5, ease: 'power2.inOut' }, '<');
+
+      timeline.add('secondaryCleared');
+      timeline.call(() => {
+        glowRevealRef.current = 1
+      }, [], 'secondaryCleared');
+
+      timeline.to(
           logoProxy,
           {
             value: 0,
-            duration: 0.6,
+            duration: 0.65,
             ease: 'power2.inOut',
             onUpdate: () => {
               logoVisibilityRef.current = logoProxy.value
             },
           },
-          '>-0.2',
-        )
-        .to(heroSecondaryRef.current, { autoAlpha: 0, duration: 0.5, ease: 'power2.inOut' }, '+=0.2')
+          'secondaryCleared+=0.1',
+        );
     })
 
     return () => {
       ctx.revert()
       logoVisibilityRef.current = 1
+      glowRevealRef.current = 0
     }
-  }, [logoVisibilityRef])
+  }, [glowRevealRef, logoVisibilityRef])
 
   return (
     <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-10">

@@ -6,16 +6,18 @@ type ContentPageProps = {
   logoVisibilityRef: MutableRefObject<number>
   sliderRevealRef: MutableRefObject<number>
   sliderActiveRef: MutableRefObject<number>
+  glowRevealRef: MutableRefObject<number>
 }
 
 export default function ContentPage({
   logoVisibilityRef,
   sliderRevealRef,
   sliderActiveRef,
+  glowRevealRef,
 }: ContentPageProps) {
   return (
     <div className="contentTaksList">
-      <HeroFooterText logoVisibilityRef={logoVisibilityRef} />
+      <HeroFooterText logoVisibilityRef={logoVisibilityRef} glowRevealRef={glowRevealRef} />
       <SliderTextContent sliderRevealRef={sliderRevealRef} sliderActiveRef={sliderActiveRef} />
     </div>
   )

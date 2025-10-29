@@ -19,7 +19,7 @@ const CARD_SOURCES: string[] = [
 const CARD_COUNT = CARD_SOURCES.length
 const CARD_GAP = 2
 const CARD_WIDTH = 1.45
-const CARD_HEIGHT = 0.75
+const CARD_HEIGHT = 0.75 
 const CARD_RADIUS = 0.08
 
 type SliderProjectsProps = {
@@ -45,7 +45,8 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
     const reveal = THREE.MathUtils.smoothstep(animatedRevealRef.current, 0, 1)
 
     const maxIndex = Math.max(CARD_COUNT - 1, 1)
-    const targetIndex = activeProgress * maxIndex
+    const extendedProgress = THREE.MathUtils.smoothstep(activeProgress, 0, 1)
+    const targetIndex = extendedProgress * maxIndex + THREE.MathUtils.lerp(0, 1.1, activeProgress ** 1.25)
     animatedIndexRef.current += (targetIndex - animatedIndexRef.current) * smoothing
     const scrollIndex = animatedIndexRef.current
 
@@ -54,8 +55,9 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
     const slideY = THREE.MathUtils.lerp(-0.05, 0.12, reveal)
     const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, 0, reveal))
     const scale = THREE.MathUtils.lerp(1.65, 1.35, reveal)
+    const fadeOut = 1 - THREE.MathUtils.smoothstep(activeProgress, 0.84, 1)
 
-    groupRef.current.visible = reveal > 0.02
+    groupRef.current.visible = reveal > 0.02 && fadeOut > 0.01
     groupRef.current.position.set(slideX, slideY, slideZ)
     groupRef.current.rotation.y = rotation
     groupRef.current.scale.setScalar(scale)
@@ -65,7 +67,7 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
       const card = child as THREE.Group
       const orderDelay = reveal - index * 0.09
       const cardReveal = THREE.MathUtils.clamp(orderDelay, 0, 1)
-      const cardOpacity = THREE.MathUtils.smoothstep(cardReveal, 0, 1)
+      const cardOpacity = THREE.MathUtils.smoothstep(cardReveal, 0, 1) * fadeOut
       const relative = index - scrollIndex
 
       card.visible = cardOpacity > 0.02
