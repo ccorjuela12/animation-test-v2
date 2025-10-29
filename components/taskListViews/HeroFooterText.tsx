@@ -85,7 +85,7 @@ export default function HeroFooterText({ logoVisibilityRef }: HeroFooterTextProp
   }, [logoVisibilityRef])
 
   return (
-    <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-5">
+    <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-10">
       <div className="relative flex w-full">
         <div className="pointer-events-auto relative w-full pb-16">
           <div

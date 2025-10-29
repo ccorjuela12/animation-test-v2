@@ -3,11 +3,11 @@ import { Center, MeshTransmissionMaterial, Text3D } from '@react-three/drei';
 export default function ModelText() {
   return (
     // Keep the logo visible through the text using a transmissive glass material.
-    <Center position={[0, 0.1, 0.5]}>
+    <Center position={[0, 0.18, -0.2]}>
       <Text3D
         font="/unison_bold.json"
-        size={1}
-        height={0.35}
+        size={1.65}
+        height={0.25}
         bevelEnabled
         bevelSize={0.02}
         bevelThickness={0.03}

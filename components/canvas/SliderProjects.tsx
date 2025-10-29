@@ -7,34 +7,52 @@ import { useVideoTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { RoundedVideoPlane } from './utils/utils'
 
-const CARD_COUNT = 6
-const CARD_GAP = 1.7
+const CARD_SOURCES: string[] = [
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+]
+
+const CARD_COUNT = CARD_SOURCES.length
+const CARD_GAP = 2
 const CARD_WIDTH = 1.45
-const CARD_HEIGHT = 0.78
+const CARD_HEIGHT = 0.75
 const CARD_RADIUS = 0.08
 
 type SliderProjectsProps = {
   revealRef: MutableRefObject<number>
+  activeRef?: MutableRefObject<number>
 }
 
-export default function SliderProjects({ revealRef }: SliderProjectsProps) {
+export default function SliderProjects({ revealRef, activeRef }: SliderProjectsProps) {
   const groupRef = useRef<THREE.Group | null>(null)
   const animatedRevealRef = useRef(0)
+  const animatedIndexRef = useRef(0)
 
   useFrame((_, delta) => {
     if (!groupRef.current) {
       return
     }
 
-    const target = THREE.MathUtils.clamp(revealRef.current, 0, 1)
+    const activeProgress = THREE.MathUtils.clamp(activeRef?.current ?? 0, 0, 1)
+    const baseReveal = THREE.MathUtils.clamp(revealRef.current, 0, 1)
+    const targetReveal = THREE.MathUtils.clamp(baseReveal, 0, 1)
     const smoothing = 1 - Math.exp(-delta * 6)
-    animatedRevealRef.current += (target - animatedRevealRef.current) * smoothing
+    animatedRevealRef.current += (targetReveal - animatedRevealRef.current) * smoothing
     const reveal = THREE.MathUtils.smoothstep(animatedRevealRef.current, 0, 1)
 
-    const slideX = THREE.MathUtils.lerp(16, -0.35, reveal)
+    const maxIndex = Math.max(CARD_COUNT - 1, 1)
+    const targetIndex = activeProgress * maxIndex
+    animatedIndexRef.current += (targetIndex - animatedIndexRef.current) * smoothing
+    const scrollIndex = animatedIndexRef.current
+
+    const slideX = THREE.MathUtils.lerp(16, 0, reveal)
     const slideZ = THREE.MathUtils.lerp(1.8, 0.7, reveal)
     const slideY = THREE.MathUtils.lerp(-0.05, 0.12, reveal)
-    const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, -2, reveal))
+    const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, 0, reveal))
     const scale = THREE.MathUtils.lerp(1.65, 1.35, reveal)
 
     groupRef.current.visible = reveal > 0.02
@@ -48,8 +66,10 @@ export default function SliderProjects({ revealRef }: SliderProjectsProps) {
       const orderDelay = reveal - index * 0.09
       const cardReveal = THREE.MathUtils.clamp(orderDelay, 0, 1)
       const cardOpacity = THREE.MathUtils.smoothstep(cardReveal, 0, 1)
+      const relative = index - scrollIndex
 
       card.visible = cardOpacity > 0.02
+      card.position.x = relative * CARD_GAP
       card.children.forEach((mesh) => {
         if (!(mesh instanceof THREE.Mesh)) {
           return
@@ -71,36 +91,28 @@ export default function SliderProjects({ revealRef }: SliderProjectsProps) {
     })
   })
 
-  const cards = useMemo(
-    () =>
-      Array.from({ length: CARD_COUNT }, (_, index) => {
-        const offset = (index - (CARD_COUNT - 1) / 2) * CARD_GAP
-        return { offset, index }
-      }),
-    [],
-  )
+  const cards = useMemo(() => CARD_SOURCES.map((src, index) => ({ index, src })), [])
 
   return (
     <group ref={groupRef}>
-      {cards.map(({ offset, index }) => (
-        <SliderCard key={index} positionX={offset} />
+      {cards.map(({ index, src }) => (
+        <SliderCard key={index} videoSrc={src} />
       ))}
     </group>
   )
 }
 
 type SliderCardProps = {
-  positionX: number
+  videoSrc: string
 }
 
-function SliderCard({ positionX }: SliderCardProps) {
+function SliderCard({ videoSrc }: SliderCardProps) {
   const cardRef = useRef<THREE.Group | null>(null)
   const texture = useVideoTexture(
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    videoSrc,
     {
       muted: true,
       loop: true,
-      
     },
   )
 
@@ -127,14 +139,14 @@ function SliderCard({ positionX }: SliderCardProps) {
   }, [])
 
   return (
-    <group ref={cardRef} position={[positionX, 0, 0]} renderOrder={30}>
+    <group ref={cardRef} position={[0, 0, 0]} renderOrder={30}>
       <RoundedVideoPlane
         width={CARD_WIDTH}
         height={CARD_HEIGHT}
         radius={CARD_RADIUS}
         map={texture}
-        borderColor="#00bcd4"
-        borderSize={0.12}
+        borderColor="#FF4000"
+        borderSize={0.01}
         borderFeather={0.012}
       />
     </group>

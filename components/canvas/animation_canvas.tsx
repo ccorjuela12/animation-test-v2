@@ -22,19 +22,23 @@ type SceneProps = {
   rotationTarget: MutableRefObject<number>
   logoVisibility: MutableRefObject<number>
   sliderReveal: MutableRefObject<number>
+  sliderActive: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget, logoVisibility, sliderReveal }: SceneProps) {
+function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive }: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
   const smoothedLogo = useRef(1)
 
   useFrame((_, delta) => {
+    const activeAmount = MathUtils.clamp(sliderActive.current, 0, 1)
+
     if (groupRef.current) {
+      const rotationBlend = MathUtils.lerp(0.075, 0.02, activeAmount)
       groupRef.current.rotation.y = MathUtils.lerp(
         groupRef.current.rotation.y,
         rotationTarget.current,
-        0.075,
+        rotationBlend,
       )
     }
 
@@ -60,14 +64,14 @@ function Scene({ rotationTarget, logoVisibility, sliderReveal }: SceneProps) {
 
   return (
     <>
+      <BackgroundTexture />
       <group ref={groupRef}>
-        <BackgroundTexture />
         <ModelText />
       </group>
       <Center position={[0, 0.1, -0.4]}>
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
-      <SliderProjects revealRef={sliderReveal} />
+      <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
     </>
   )
 }
@@ -76,18 +80,22 @@ type AnimationCanvasProps = {
   containerRef: MutableRefObject<HTMLDivElement | null>
   sliderRevealRef?: MutableRefObject<number>
   logoVisibilityRef?: MutableRefObject<number>
+  sliderActiveRef?: MutableRefObject<number>
 }
 
 export default function AnimationCanvas({
   containerRef,
   sliderRevealRef,
   logoVisibilityRef,
+  sliderActiveRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const internalSliderReveal = useRef(0)
   const internalLogoVisibility = useRef(1)
+  const internalSliderActive = useRef(0)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
+  const sliderActive = sliderActiveRef ?? internalSliderActive
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
 
@@ -122,7 +130,9 @@ export default function AnimationCanvas({
         scrub: true,
         onUpdate: (self) => {
           const progress = MathUtils.clamp(self.progress, 0, 1)
-          rotationTarget.current = gsap.utils.mapRange(0, 1, 0, ROTATION_RANGE, progress)
+          const activeAmount = MathUtils.clamp(sliderActive.current, 0, 1)
+          const maxRange = ROTATION_RANGE * (1 - 0.45 * activeAmount)
+          rotationTarget.current = gsap.utils.mapRange(0, 1, 0, maxRange, progress)
 
           if (!usingExternalSlider) {
             sliderReveal.current = progress
@@ -141,7 +151,14 @@ export default function AnimationCanvas({
       lenis.off('scroll', updateScrollTrigger)
       lenis.destroy()
     }
-  }, [containerRef, logoVisibility, sliderReveal, usingExternalLogo, usingExternalSlider])
+  }, [
+    containerRef,
+    logoVisibility,
+    sliderActive,
+    sliderReveal,
+    usingExternalLogo,
+    usingExternalSlider,
+  ])
 
   return (
     <Canvas camera={{ position: [0, 0.1, 2.15] }} className="h-full w-full">
@@ -150,6 +167,7 @@ export default function AnimationCanvas({
           rotationTarget={rotationTarget}
           logoVisibility={logoVisibility}
           sliderReveal={sliderReveal}
+          sliderActive={sliderActive}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>

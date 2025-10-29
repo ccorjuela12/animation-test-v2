@@ -9,13 +9,14 @@ gsap.registerPlugin(ScrollTrigger)
 
 type SliderTextContentProps = {
   sliderRevealRef: MutableRefObject<number>
+  sliderActiveRef: MutableRefObject<number>
 }
 
 type AccentWidth = 'small' | 'medium' | 'large' | 'wide'
 
 type SlideContent = {
   label: string
-  title: [string, string]
+  title: string
   paragraphs: string[]
   accent?: AccentWidth
 }
@@ -30,7 +31,7 @@ const ACCENT_WIDTH_CLASS: Record<AccentWidth, string> = {
 const SLIDER_CONTENT: SlideContent[] = [
   {
     label: 'Campaign seeds',
-    title: ['Map the moment,', 'before launch.'],
+    title: 'Map the moment before launch.',
     paragraphs: [
       'We prototype storyboards with real product data so every teaser primes intent.',
       'Our AI loops surface the angles that resonate the most before you go wide.',
@@ -39,7 +40,7 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
   {
     label: 'Realtime pivots',
-    title: ['Switch the beat', 'while it streams.'],
+    title: 'Switch the beat while it streams.',
     paragraphs: [
       'Video variants evolve as telemetry rolls in - no offline renders or late-night uploads.',
     ],
@@ -47,7 +48,7 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
   {
     label: 'Creative ops',
-    title: ['Spin up shots', 'in minutes.'],
+    title: 'Spin up shots in minutes.',
     paragraphs: [
       'Ingest your brand kit and we output camera moves, lighting, and motion cues tuned for your palette.',
       'Directors keep final call with human-in-the-loop approvals on every scene.',
@@ -56,7 +57,7 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
   {
     label: 'Audience loops',
-    title: ['Personalise', 'every storyline.'],
+    title: 'Personalise every storyline.',
     paragraphs: [
       'Swap voiceover, copy, or CTA per segment and ship hyper-specific cuts that still feel premium.',
     ],
@@ -64,7 +65,7 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
   {
     label: 'Signal intelligence',
-    title: ['Forecast what', 'deserves the spotlight.'],
+    title: 'Forecast what deserves the spotlight.',
     paragraphs: [
       'We cross-reference social, CRM, and product heatmaps to decide which beats to amplify next.',
     ],
@@ -72,7 +73,7 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
   {
     label: 'Post-launch lift',
-    title: ['Keep content', 'learning forward.'],
+    title: 'Keep content learning forward.',
     paragraphs: [
       'Automated recuts refresh top performers for new audiences without starting from zero.',
       'Hold attention high with living stories that never sit still.',
@@ -81,7 +82,10 @@ const SLIDER_CONTENT: SlideContent[] = [
   },
 ]
 
-export default function SliderTextContent({ sliderRevealRef }: SliderTextContentProps) {
+export default function SliderTextContent({
+  sliderRevealRef,
+  sliderActiveRef,
+}: SliderTextContentProps) {
   const sectionRef = useRef<HTMLElement | null>(null)
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null)
   const slideRefs = useRef<Array<HTMLDivElement | null>>(new Array(SLIDER_CONTENT.length).fill(null))
@@ -99,9 +103,38 @@ export default function SliderTextContent({ sliderRevealRef }: SliderTextContent
     }
 
     sliderRevealRef.current = 0
+    sliderActiveRef.current = 0
     activeIndexRef.current = 0
+    let entranceProgress = 0
 
     const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top bottom',
+        end: 'top top',
+        scrub: true,
+        onUpdate: (self) => {
+          entranceProgress = gsap.utils.clamp(0, 1, self.progress)
+          sliderRevealRef.current = entranceProgress
+        },
+        onEnter: () => {
+          entranceProgress = 0
+          sliderRevealRef.current = 0
+        },
+        onLeave: () => {
+          entranceProgress = 1
+          sliderRevealRef.current = 1
+        },
+        onEnterBack: () => {
+          entranceProgress = 1
+          sliderRevealRef.current = 1
+        },
+        onLeaveBack: () => {
+          entranceProgress = 0
+          sliderRevealRef.current = 0
+        },
+      })
+
       slideRefs.current.forEach((slide, index) => {
         if (!slide) return
         gsap.set(slide, { autoAlpha: index === 0 ? 1 : 0, y: index === 0 ? 0 : 48 })
@@ -115,34 +148,34 @@ export default function SliderTextContent({ sliderRevealRef }: SliderTextContent
         pin: true,
         anticipatePin: 1,
         onEnter: () => {
-          sliderRevealRef.current = 0
-        },
-        onLeave: () => {
+          sliderActiveRef.current = 0
           sliderRevealRef.current = 1
         },
         onEnterBack: () => {
+          sliderActiveRef.current = 1
           sliderRevealRef.current = 1
         },
-        onLeaveBack: () => {
+        onLeave: () => {
+          sliderActiveRef.current = 1
           sliderRevealRef.current = 0
+        },
+        onLeaveBack: () => {
+          sliderActiveRef.current = 0
+          sliderRevealRef.current = entranceProgress
         },
         onUpdate: (self) => {
           const progress = gsap.utils.clamp(0, 1, self.progress)
-          const sliderPhase = gsap.utils.clamp(
-            0,
-            1,
-            gsap.utils.normalize(0.5, 1, progress),
-          )
-          sliderRevealRef.current = sliderPhase
+          sliderActiveRef.current = progress
 
           if (SLIDER_CONTENT.length <= 1) {
             return
           }
 
-          const segment = 1 / SLIDER_CONTENT.length
+          const steps = Math.max(SLIDER_CONTENT.length - 1, 1)
+          const rawIndex = progress * steps
           const newIndex = Math.min(
             SLIDER_CONTENT.length - 1,
-            Math.floor((sliderPhase + segment * 0.25) / segment),
+            Math.floor(rawIndex + 0.0001),
           )
 
           if (newIndex === activeIndexRef.current) {
@@ -180,12 +213,13 @@ export default function SliderTextContent({ sliderRevealRef }: SliderTextContent
     return () => {
       ctx.revert()
       sliderRevealRef.current = 0
+      sliderActiveRef.current = 0
       activeIndexRef.current = 0
     }
-  }, [sliderRevealRef])
+  }, [sliderActiveRef, sliderRevealRef])
 
   return (
-    <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-5">
+    <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-10 px-30">
       <div className="relative flex w-full">
         <div className="pointer-events-auto relative w-full pb-16">
           <div
@@ -200,22 +234,20 @@ export default function SliderTextContent({ sliderRevealRef }: SliderTextContent
                   ref={setSlideRef(index)}
                   className="absolute inset-x-0 bottom-0 flex w-full flex-row items-center justify-between space-x-2 opacity-0"
                 >
-                  <div className="hero__info-left max-w-fit">
-                    <span className="h2 mb-4 rounded-4xl border border-primary py-2 px-4">{slide.label}</span>
-                    <br />
-                    <h2 className="mt-2 px-4 text-left font-light">
-                      {slide.title[0]}
-                      <br />
-                      {slide.title[1]}
-                    </h2>
-                  </div>
-                  <div className="hero__info-right max-w-96 flex flex-col items-start gap-3">
-                    <div className={`h-2 rounded bg-primary ${accent}`} />
-                    {slide.paragraphs.map((paragraph) => (
-                      <p key={paragraph} className="max-w-96 text-left">
-                        {paragraph}
-                      </p>
-                    ))}
+                  <div className="hero__info-left max-w-2/3 flex flex-col items-start gap-3">
+                    <div className='gap-2 flex flex-col'>
+                       <span className="text-sm text-primary">{slide.label}</span>
+                      <h2 className=" text-left font-light">
+                        <b>{slide.title}</b>
+                      </h2>
+                    </div>
+                    <div>
+                        {slide.paragraphs.map((paragraph) => (
+                        <p key={paragraph} className="text-left ">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )
