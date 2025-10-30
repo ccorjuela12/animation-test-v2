@@ -18,6 +18,7 @@ export default function Page() {
   const logoVisibilityRef = useRef(1)
   const sliderActiveRef = useRef(0)
   const glowRevealRef = useRef(0)
+  const modelTextProgressRef = useRef(0)
 
   useEffect(() => {
     const prompt = heroScroll.current
@@ -71,6 +72,7 @@ export default function Page() {
               logoVisibilityRef={logoVisibilityRef}
               sliderActiveRef={sliderActiveRef}
               glowRevealRef={glowRevealRef}
+              modelTextProgressRef={modelTextProgressRef}
             />
             <p
               ref={heroScroll}
@@ -95,6 +97,7 @@ export default function Page() {
           sliderRevealRef={sliderRevealRef}
           sliderActiveRef={sliderActiveRef}
           glowRevealRef={glowRevealRef}
+          modelTextProgressRef={modelTextProgressRef}
         />
       </main>
     </>

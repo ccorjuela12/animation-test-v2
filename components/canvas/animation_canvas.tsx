@@ -24,9 +24,17 @@ type SceneProps = {
   sliderReveal: MutableRefObject<number>
   sliderActive: MutableRefObject<number>
   glowReveal: MutableRefObject<number>
+  modelTextProgress: MutableRefObject<number>
 }
 
-function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive, glowReveal }: SceneProps) {
+function Scene({
+  rotationTarget,
+  logoVisibility,
+  sliderReveal,
+  sliderActive,
+  glowReveal,
+  modelTextProgress,
+}: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
   const smoothedLogo = useRef(1)
@@ -67,7 +75,7 @@ function Scene({ rotationTarget, logoVisibility, sliderReveal, sliderActive, glo
     <>
       <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} />
       <group ref={groupRef}>
-        <ModelText />
+        <ModelText animationProgressRef={modelTextProgress} />
       </group>
       <Center position={[0, 0.1, -0.4]}>
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
@@ -83,6 +91,7 @@ type AnimationCanvasProps = {
   logoVisibilityRef?: MutableRefObject<number>
   sliderActiveRef?: MutableRefObject<number>
   glowRevealRef?: MutableRefObject<number>
+  modelTextProgressRef?: MutableRefObject<number>
 }
 
 export default function AnimationCanvas({
@@ -91,16 +100,19 @@ export default function AnimationCanvas({
   logoVisibilityRef,
   sliderActiveRef,
   glowRevealRef,
+  modelTextProgressRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const internalSliderReveal = useRef(0)
   const internalLogoVisibility = useRef(1)
   const internalSliderActive = useRef(0)
   const internalGlowReveal = useRef(0)
+  const internalModelTextProgress = useRef(0)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
   const sliderActive = sliderActiveRef ?? internalSliderActive
   const glowReveal = glowRevealRef ?? internalGlowReveal
+  const modelTextProgress = modelTextProgressRef ?? internalModelTextProgress
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
 
@@ -174,6 +186,7 @@ export default function AnimationCanvas({
           sliderReveal={sliderReveal}
           sliderActive={sliderActive}
           glowReveal={glowReveal}
+          modelTextProgress={modelTextProgress}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>
