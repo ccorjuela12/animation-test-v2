@@ -38,6 +38,10 @@ p{
 b{
   font-family: var(--font-unison-pro-bold), ui-sans-serif, system-ui;
 }
+h1, .h1{
+  @apply text-4xl md:text-8xl;
+  font-family: var(--font-unison-pro-bold), ui-sans-serif, system-ui;
+}
 h2, .h2{
   @apply text-3xl md:text-4xl;
   font-family: var(--font-unison-pro-bold), ui-sans-serif, system-ui;

@@ -33,7 +33,7 @@ module.exports = {
         // Utilidad para stroke acento (coincide con los requisitos del SVG #4)
         '.stroke-accent': {
           stroke: theme('colors.primary'),
-          'stroke-width': '3.8982',
+          'stroke-width': '1',
         },
         // Utilidad para solidificar SVGs (relleno blanco, sin contorno)
         '.svg-solid': {

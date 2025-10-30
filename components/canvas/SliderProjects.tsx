@@ -45,15 +45,22 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
     const reveal = THREE.MathUtils.smoothstep(animatedRevealRef.current, 0, 1)
 
     const maxIndex = Math.max(CARD_COUNT - 1, 1)
-    const extendedProgress = THREE.MathUtils.smoothstep(activeProgress, 0, 1)
-    const targetIndex = extendedProgress * maxIndex + THREE.MathUtils.lerp(0, 1.1, activeProgress ** 1.25)
+    const rawIndex = activeProgress * maxIndex
+    const nearestIndex = THREE.MathUtils.clamp(Math.round(rawIndex), 0, maxIndex)
+    const centerDistance = Math.abs(rawIndex - nearestIndex)
+    const holdStrength = 1 - THREE.MathUtils.smoothstep(centerDistance, 0, 0.24)
+    const easedIndex = THREE.MathUtils.lerp(rawIndex, nearestIndex, holdStrength * 0.85)
+    const tailOffset = THREE.MathUtils.lerp(0, 0.85, Math.pow(activeProgress, 1.25))
+    const targetIndex = easedIndex + tailOffset
     animatedIndexRef.current += (targetIndex - animatedIndexRef.current) * smoothing
     const scrollIndex = animatedIndexRef.current
 
     const slideX = THREE.MathUtils.lerp(16, 0, reveal)
     const slideZ = THREE.MathUtils.lerp(1.8, 0.7, reveal)
     const slideY = THREE.MathUtils.lerp(-0.05, 0.12, reveal)
-    const rotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, 0, reveal))
+    const baseRotation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-18, 0, reveal))
+    const rotationEase = THREE.MathUtils.lerp(0.22, 1, 1 - holdStrength)
+    const rotation = baseRotation * rotationEase
     const scale = THREE.MathUtils.lerp(1.65, 1.35, reveal)
     const fadeOut = 1 - THREE.MathUtils.smoothstep(activeProgress, 0.84, 1)
 
@@ -69,9 +76,12 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
       const cardReveal = THREE.MathUtils.clamp(orderDelay, 0, 1)
       const cardOpacity = THREE.MathUtils.smoothstep(cardReveal, 0, 1) * fadeOut
       const relative = index - scrollIndex
+      const focus = 1 - THREE.MathUtils.smoothstep(Math.abs(relative), 0, 0.75)
+      const focusScale = THREE.MathUtils.lerp(0.92, 1.12, focus)
 
       card.visible = cardOpacity > 0.02
       card.position.x = relative * CARD_GAP
+      card.scale.setScalar(focusScale)
       card.children.forEach((mesh) => {
         if (!(mesh instanceof THREE.Mesh)) {
           return

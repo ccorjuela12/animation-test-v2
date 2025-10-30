@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from 'react'
 import type { MutableRefObject } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { MathUtils } from 'three'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -90,6 +91,7 @@ export default function SliderTextContent({
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null)
   const slideRefs = useRef<Array<HTMLDivElement | null>>(new Array(SLIDER_CONTENT.length).fill(null))
   const activeIndexRef = useRef(0)
+  const transitionRef = useRef<gsap.core.Timeline | null>(null)
 
   const setSlideRef = (index: number) => (element: HTMLDivElement | null) => {
     slideRefs.current[index] = element
@@ -106,6 +108,20 @@ export default function SliderTextContent({
     sliderActiveRef.current = 0
     activeIndexRef.current = 0
     let entranceProgress = 0
+    const fadeOutActiveSlide = () => {
+      const activeSlide = slideRefs.current[activeIndexRef.current]
+      if (!activeSlide) {
+        return
+      }
+      transitionRef.current?.kill()
+      gsap.to(activeSlide, {
+        autoAlpha: 0,
+        y: -32,
+        duration: 0.4,
+        ease: 'power2.inOut',
+        overwrite: 'auto',
+      })
+    }
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
@@ -158,10 +174,12 @@ export default function SliderTextContent({
         onLeave: () => {
           sliderActiveRef.current = 1
           sliderRevealRef.current = 0
+          fadeOutActiveSlide()
         },
         onLeaveBack: () => {
           sliderActiveRef.current = 0
           sliderRevealRef.current = entranceProgress
+          fadeOutActiveSlide()
         },
         onUpdate: (self) => {
           const progress = gsap.utils.clamp(0, 1, self.progress)
@@ -173,10 +191,13 @@ export default function SliderTextContent({
 
           const steps = Math.max(SLIDER_CONTENT.length - 1, 1)
           const rawIndex = progress * steps
-          const newIndex = Math.min(
-            SLIDER_CONTENT.length - 1,
-            Math.floor(rawIndex + 0.0001),
-          )
+          const nearestIndex = MathUtils.clamp(Math.round(rawIndex), 0, steps)
+          const centerDistance = Math.abs(rawIndex - nearestIndex)
+          const holdStrength = 1 - MathUtils.smoothstep(centerDistance, 0, 0.24)
+          const focusIndex = MathUtils.lerp(rawIndex, nearestIndex, holdStrength * 0.9)
+          const desiredIndex = MathUtils.clamp(Math.round(focusIndex), 0, steps)
+          const stepDelta = MathUtils.clamp(desiredIndex - activeIndexRef.current, -1, 1)
+          const newIndex = activeIndexRef.current + stepDelta
 
           if (newIndex === activeIndexRef.current) {
             return
@@ -186,13 +207,15 @@ export default function SliderTextContent({
           const previous = slideRefs.current[activeIndexRef.current]
           const next = slideRefs.current[newIndex]
 
-          const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
+          transitionRef.current?.kill()
+          const tl = gsap.timeline({ defaults: { ease: 'power2.out', overwrite: 'auto' } })
           if (previous) {
             tl.to(previous, {
               autoAlpha: 0,
               y: -32 * direction,
               duration: 0.45,
               ease: 'power2.inOut',
+              overwrite: 'auto',
             })
           }
 
@@ -200,18 +223,28 @@ export default function SliderTextContent({
             tl.fromTo(
               next,
               { autoAlpha: 0, y: 32 * direction },
-              { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out' },
+              { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out', overwrite: 'auto' },
               previous ? '<0.08' : 0,
             )
           }
 
           activeIndexRef.current = newIndex
+          transitionRef.current = tl
+          tl.eventCallback('onComplete', () => {
+            if (transitionRef.current === tl) {
+              transitionRef.current = null
+            }
+          })
         },
       })
     }, wrapper)
 
     return () => {
       ctx.revert()
+      transitionRef.current?.kill()
+      if (transitionRef.current) {
+        transitionRef.current = null
+      }
       sliderRevealRef.current = 0
       sliderActiveRef.current = 0
       activeIndexRef.current = 0

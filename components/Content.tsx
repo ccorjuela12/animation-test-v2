@@ -1,6 +1,7 @@
 import type { MutableRefObject } from 'react'
 import HeroFooterText from './taskListViews/HeroFooterText'
 import SliderTextContent from './taskListViews/SliderTextContent'
+import StoriesSection from './taskListViews/StoriesSection'
 
 type ContentPageProps = {
   logoVisibilityRef: MutableRefObject<number>
@@ -19,6 +20,7 @@ export default function ContentPage({
     <div className="contentTaksList">
       <HeroFooterText logoVisibilityRef={logoVisibilityRef} glowRevealRef={glowRevealRef} />
       <SliderTextContent sliderRevealRef={sliderRevealRef} sliderActiveRef={sliderActiveRef} />
+      <StoriesSection/>
     </div>
   )
 }
