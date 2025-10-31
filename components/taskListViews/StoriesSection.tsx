@@ -15,7 +15,7 @@ export default function StoriesSection({ modelTextProgressRef }: StoriesSectionP
   const sectionStoriesRef = useRef<HTMLElement | null>(null)
   const titleRef = useRef<HTMLHeadingElement | null>(null)
   const textRef = useRef<HTMLDivElement | null>(null)
-  const imageRef = useRef<HTMLImageElement | null>(null)
+  const imageContainerRef = useRef<HTMLDivElement | null>(null)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
 
   useLayoutEffect(() => {
@@ -74,16 +74,15 @@ export default function StoriesSection({ modelTextProgressRef }: StoriesSectionP
     >
       {/* Future story animations will live here */}
       <div className="container flex flex-col gap-20 py-36">
-        <h2 ref={titleRef} className="h1 opacity-0">
+        <h2 ref={titleRef} className="h1">
           Where <span className="text-primary">stories</span>
           <br />
           breathe.
         </h2>
         <div className="flex items-center gap-20">
-          <div className="flex-2">
-            <img ref={imageRef} src="./images/stories.png" alt="test" className="h-auto w-full opacity-0" />
-          </div>
-          <div className="flex-1 flex flex-col gap-2 opacity-0" ref={textRef}>
+          {/* Future story animation image container here*/}
+          <div ref={imageContainerRef} className="flex-2 bg-primary/10"/>
+          <div className="flex-1 flex flex-col gap-2" ref={textRef}>
             <div className="h-2 w-10 rounded bg-primary" />
             <p className="max-w-96 text-left text-base">
               At <b>STUDIO</b>, we don't just produce videos - we create living, breathing visual narratives tailored to
@@ -93,11 +92,11 @@ export default function StoriesSection({ modelTextProgressRef }: StoriesSectionP
           </div>
         </div>
       </div>
-      <div className="absolute left-[15%] top-[12%] z-20 flex h-[85%] w-[70%] flex-col justify-between gap-14">
+      {/* <div className="absolute left-[15%] top-[12%] z-20 flex h-[85%] w-[70%] flex-col justify-between gap-14 opacity-0">
         <PlayReel text="PLAY REEL" numberIcons={3} repeat={4} />
         <div className="h-[80%] w-full" />
         <PlayReel text="PLAY REEL" numberIcons={3} repeat={4} />
-      </div>
+      </div> */}
     </section>
   )
 }
