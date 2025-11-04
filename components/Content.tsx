@@ -8,6 +8,8 @@ type ContentPageProps = {
   sliderRevealRef: MutableRefObject<number>
   sliderActiveRef: MutableRefObject<number>
   glowRevealRef: MutableRefObject<number>
+  storiesVideoRevealRef: MutableRefObject<number>
+  storiesVideoLayoutRef: MutableRefObject<number>
   modelTextProgressRef: MutableRefObject<number>
 }
 
@@ -16,13 +18,20 @@ export default function ContentPage({
   sliderRevealRef,
   sliderActiveRef,
   glowRevealRef,
+  storiesVideoRevealRef,
+  storiesVideoLayoutRef,
   modelTextProgressRef,
 }: ContentPageProps) {
   return (
     <div className="contentTaksList">
       <HeroFooterText logoVisibilityRef={logoVisibilityRef} glowRevealRef={glowRevealRef} />
       <SliderTextContent sliderRevealRef={sliderRevealRef} sliderActiveRef={sliderActiveRef} />
-      <StoriesSection modelTextProgressRef={modelTextProgressRef} />
+      <StoriesSection
+        modelTextProgressRef={modelTextProgressRef}
+        storiesVideoRevealRef={storiesVideoRevealRef}
+        storiesVideoLayoutRef={storiesVideoLayoutRef}
+      />
+      
     </div>
   )
 }

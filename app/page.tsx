@@ -4,6 +4,7 @@ import AnimationCanvas from '@/components/canvas/animation_canvas'
 import CanvasLoader from '@/components/canvas/canvas_loader'
 import ContentPage from '@/components/Content'
 import ScrollProgressBar from '@/components/ui/ScrollProgressBar'
+import SectionProgressIndicator from '@/components/ui/SectionProgressIndicator'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
@@ -18,6 +19,8 @@ export default function Page() {
   const logoVisibilityRef = useRef(1)
   const sliderActiveRef = useRef(0)
   const glowRevealRef = useRef(0)
+  const storiesVideoRevealRef = useRef(0)
+  const storiesVideoLayoutRef = useRef(0)
   const modelTextProgressRef = useRef(0)
 
   useEffect(() => {
@@ -62,9 +65,15 @@ export default function Page() {
   return (
     <>
       <CanvasLoader />
-      <ScrollProgressBar />
+      {/* <ScrollProgressBar /> */}
+      <SectionProgressIndicator />
       <main ref={containerRef} className="relative bg-black text-white">
-        <section ref={heroSectionRef} className="hero relative h-[320vh] w-full">
+        <section
+          ref={heroSectionRef}
+          data-section-progress="hero"
+          data-section-label="Top"
+          className="hero relative h-[320vh] w-full"
+        >
           <div className="fixed top-0 h-screen w-full">
             <AnimationCanvas
               containerRef={containerRef}
@@ -72,6 +81,8 @@ export default function Page() {
               logoVisibilityRef={logoVisibilityRef}
               sliderActiveRef={sliderActiveRef}
               glowRevealRef={glowRevealRef}
+              storiesVideoRevealRef={storiesVideoRevealRef}
+              storiesVideoLayoutRef={storiesVideoLayoutRef}
               modelTextProgressRef={modelTextProgressRef}
             />
             <p
@@ -97,6 +108,8 @@ export default function Page() {
           sliderRevealRef={sliderRevealRef}
           sliderActiveRef={sliderActiveRef}
           glowRevealRef={glowRevealRef}
+          storiesVideoRevealRef={storiesVideoRevealRef}
+          storiesVideoLayoutRef={storiesVideoLayoutRef}
           modelTextProgressRef={modelTextProgressRef}
         />
       </main>

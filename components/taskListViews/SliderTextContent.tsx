@@ -252,7 +252,12 @@ export default function SliderTextContent({
   }, [sliderActiveRef, sliderRevealRef])
 
   return (
-    <section ref={sectionRef} className="relative flex h-screen items-end justify-center pb-10 px-30">
+    <section
+      ref={sectionRef}
+      data-section-progress="slider-text"
+      data-section-label="Capabilities"
+      className="relative flex h-screen items-end justify-center px-30 pb-10"
+    >
       <div className="relative flex w-full">
         <div className="pointer-events-auto relative w-full pb-16">
           <div

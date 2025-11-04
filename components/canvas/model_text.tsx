@@ -1,24 +1,39 @@
 import { useRef } from 'react'
-import type { MutableRefObject } from 'react'
+import type { MutableRefObject, JSX } from 'react'
 import { MathUtils, Group, type MeshPhysicalMaterial } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Center, MeshTransmissionMaterial, MeshTransmissionMaterialProps, Text3D } from '@react-three/drei'
 
-type ModelTextProps = {
+type GroupProps = JSX.IntrinsicElements['group']
+
+type ModelTextProps = GroupProps & {
   animationProgressRef: MutableRefObject<number>
+  text?: string
+  size?: number
+  position?: [number, number, number]
+  scaleRange?: [number, number]
+  fadeSpeed?: number
 }
 
-export default function ModelText({ animationProgressRef }: ModelTextProps) {
+export default function ModelText({
+  animationProgressRef,
+  text = 'AI',
+  size = 1.65,
+  position = [0, 0.18, -0.2],
+  scaleRange = [1, 1.85],
+  fadeSpeed = 6,
+  ...groupProps
+}: ModelTextProps) {
   const groupRef = useRef<Group | null>(null)
   const materialRef = useRef<MeshTransmissionMaterialProps | null>(null)
   const smoothedProgress = useRef(0)
 
   useFrame((_, delta) => {
     const target = MathUtils.clamp(animationProgressRef.current, 0, 1)
-    const smoothing = 1 - Math.exp(-delta * 6)
+    const smoothing = 1 - Math.exp(-delta * fadeSpeed)
     smoothedProgress.current += (target - smoothedProgress.current) * smoothing
 
-    const scale = MathUtils.lerp(1, 1.85, smoothedProgress.current)
+    const scale = MathUtils.lerp(scaleRange[0], scaleRange[1], smoothedProgress.current)
     const opacity = MathUtils.clamp(1 - smoothedProgress.current, 0, 1)
 
     if (groupRef.current) {
@@ -34,19 +49,19 @@ export default function ModelText({ animationProgressRef }: ModelTextProps) {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} {...groupProps}>
       {/* Keep the logo visible through the text using a transmissive glass material. */}
-      <Center position={[0, 0.18, -0.2]}>
+      <Center position={position}>
         <Text3D
           font="/unison_bold.json"
-          size={1.65}
+          size={size}
           height={0.25}
           bevelEnabled
           bevelSize={0.02}
           bevelThickness={0.03}
           curveSegments={24}
         >
-          AI
+          {text}
           <MeshTransmissionMaterial
             ref={materialRef}
             transparent

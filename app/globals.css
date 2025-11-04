@@ -53,3 +53,29 @@ h2, .h2{
   font-family: var(--font-unison-pro-light), ui-sans-serif, system-ui;
   font-weight: 300;
 }
+
+@keyframes marquee-left {
+  0% {
+    transform: translateX(var(--marquee-start, 0%));
+  }
+  100% {
+    transform: translateX(calc(var(--marquee-start, 0%) - 100%));
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(var(--marquee-start, 0%));
+  }
+  100% {
+    transform: translateX(calc(var(--marquee-start, 0%) + 100%));
+  }
+}
+
+.animate-marquee-left {
+  animation: marquee-left var(--marquee-duration, 24s) linear infinite;
+}
+
+.animate-marquee-right {
+  animation: marquee-right var(--marquee-duration, 24s) linear infinite;
+}

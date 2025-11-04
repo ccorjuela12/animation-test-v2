@@ -25,6 +25,8 @@ type SceneProps = {
   sliderReveal: MutableRefObject<number>
   sliderActive: MutableRefObject<number>
   glowReveal: MutableRefObject<number>
+  storiesVideoReveal: MutableRefObject<number>
+  storiesVideoLayout: MutableRefObject<number>
   modelTextProgress: MutableRefObject<number>
 }
 
@@ -34,6 +36,8 @@ function Scene({
   sliderReveal,
   sliderActive,
   glowReveal,
+  storiesVideoReveal,
+  storiesVideoLayout,
   modelTextProgress,
 }: SceneProps) {
   const groupRef = useRef<Group>(null)
@@ -76,13 +80,13 @@ function Scene({
     <>
       <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} />
       <group ref={groupRef}>
-        <ModelText animationProgressRef={modelTextProgress} />
+        <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.18, -0.2]}/>
       </group>
+      <StoriesVideo revealRef={storiesVideoReveal} layoutRef={storiesVideoLayout} />
       <Center position={[0, 0.1, -0.4]}>
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
       <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
-      <StoriesVideo/>
     </>
   )
 }
@@ -93,6 +97,8 @@ type AnimationCanvasProps = {
   logoVisibilityRef?: MutableRefObject<number>
   sliderActiveRef?: MutableRefObject<number>
   glowRevealRef?: MutableRefObject<number>
+  storiesVideoRevealRef?: MutableRefObject<number>
+  storiesVideoLayoutRef?: MutableRefObject<number>
   modelTextProgressRef?: MutableRefObject<number>
 }
 
@@ -102,6 +108,8 @@ export default function AnimationCanvas({
   logoVisibilityRef,
   sliderActiveRef,
   glowRevealRef,
+  storiesVideoRevealRef,
+  storiesVideoLayoutRef,
   modelTextProgressRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
@@ -109,11 +117,15 @@ export default function AnimationCanvas({
   const internalLogoVisibility = useRef(1)
   const internalSliderActive = useRef(0)
   const internalGlowReveal = useRef(0)
+  const internalStoriesVideoReveal = useRef(0)
+  const internalStoriesVideoLayout = useRef(0)
   const internalModelTextProgress = useRef(0)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
   const sliderActive = sliderActiveRef ?? internalSliderActive
   const glowReveal = glowRevealRef ?? internalGlowReveal
+  const storiesVideoReveal = storiesVideoRevealRef ?? internalStoriesVideoReveal
+  const storiesVideoLayout = storiesVideoLayoutRef ?? internalStoriesVideoLayout
   const modelTextProgress = modelTextProgressRef ?? internalModelTextProgress
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
@@ -188,6 +200,8 @@ export default function AnimationCanvas({
           sliderReveal={sliderReveal}
           sliderActive={sliderActive}
           glowReveal={glowReveal}
+          storiesVideoReveal={storiesVideoReveal}
+          storiesVideoLayout={storiesVideoLayout}
           modelTextProgress={modelTextProgress}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}

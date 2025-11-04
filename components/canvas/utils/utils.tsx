@@ -108,6 +108,7 @@ export function RoundedVideoPlane({
           toneMapped={false}
           transparent={opacity < 1}
           opacity={opacity}
+          side={THREE.DoubleSide}
         />
       </mesh>
       {borderTexture && (
@@ -119,6 +120,7 @@ export function RoundedVideoPlane({
             alphaMap={borderTexture}
             depthWrite={false}
             opacity={opacity}
+            side={THREE.FrontSide}
           />
         </mesh>
       )}
