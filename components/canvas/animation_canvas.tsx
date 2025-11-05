@@ -14,6 +14,7 @@ import BackgroundTexture from './background_texture'
 import SliderProjects from './SliderProjects'
 import IgniteEmitter from './ignite_emiter'
 import StoriesVideo from './StoriesVideo'
+import GridTunnel from './GridTunnel'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -87,6 +88,7 @@ function Scene({
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
       <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
+      <GridTunnel />
     </>
   )
 }
