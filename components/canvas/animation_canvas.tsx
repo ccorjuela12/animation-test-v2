@@ -12,24 +12,13 @@ import ModelText from './model_text'
 // import IgniteEmitter from './ignite_emiter'
 import BackgroundTexture from './background_texture'
 import SliderProjects from './SliderProjects'
-import IgniteEmitter from './ignite_emiter'
 import StoriesVideo from './StoriesVideo'
 import GridTunnel from './GridTunnel'
+import { AnimationCanvasProps, SceneProps } from '@/types/types'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const ROTATION_RANGE = Math.PI / 4
-
-type SceneProps = {
-  rotationTarget: MutableRefObject<number>
-  logoVisibility: MutableRefObject<number>
-  sliderReveal: MutableRefObject<number>
-  sliderActive: MutableRefObject<number>
-  glowReveal: MutableRefObject<number>
-  storiesVideoReveal: MutableRefObject<number>
-  storiesVideoLayout: MutableRefObject<number>
-  modelTextProgress: MutableRefObject<number>
-}
 
 function Scene({
   rotationTarget,
@@ -40,6 +29,8 @@ function Scene({
   storiesVideoReveal,
   storiesVideoLayout,
   modelTextProgress,
+  visionGridProgress,
+  visionModelTextProgress,
 }: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
@@ -79,29 +70,27 @@ function Scene({
 
   return (
     <>
-      <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} />
+      <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} hideProgress={visionGridProgress} />
       <group ref={groupRef}>
         <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.18, -0.2]}/>
       </group>
+      <ModelText
+        animationProgressRef={visionModelTextProgress}
+        text={'AI'}
+        size={1}
+        position={[0, 0, -0.2]}
+        scaleRange={[0.05, 1]}
+        fadeSpeed={4.5}
+        mode="fadeIn"
+      />
       <StoriesVideo revealRef={storiesVideoReveal} layoutRef={storiesVideoLayout} />
       <Center position={[0, 0.1, -0.4]}>
         <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
       </Center>
       <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
-      <GridTunnel />
+      <GridTunnel progressRef={visionGridProgress} />
     </>
   )
-}
-
-type AnimationCanvasProps = {
-  containerRef: MutableRefObject<HTMLDivElement | null>
-  sliderRevealRef?: MutableRefObject<number>
-  logoVisibilityRef?: MutableRefObject<number>
-  sliderActiveRef?: MutableRefObject<number>
-  glowRevealRef?: MutableRefObject<number>
-  storiesVideoRevealRef?: MutableRefObject<number>
-  storiesVideoLayoutRef?: MutableRefObject<number>
-  modelTextProgressRef?: MutableRefObject<number>
 }
 
 export default function AnimationCanvas({
@@ -113,6 +102,8 @@ export default function AnimationCanvas({
   storiesVideoRevealRef,
   storiesVideoLayoutRef,
   modelTextProgressRef,
+  visionGridProgressRef,
+  visionModelTextProgressRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const internalSliderReveal = useRef(0)
@@ -122,6 +113,8 @@ export default function AnimationCanvas({
   const internalStoriesVideoReveal = useRef(0)
   const internalStoriesVideoLayout = useRef(0)
   const internalModelTextProgress = useRef(0)
+  const internalVisionGridProgress = useRef(0)
+  const internalVisionModelTextProgress = useRef(0)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
   const sliderActive = sliderActiveRef ?? internalSliderActive
@@ -129,6 +122,8 @@ export default function AnimationCanvas({
   const storiesVideoReveal = storiesVideoRevealRef ?? internalStoriesVideoReveal
   const storiesVideoLayout = storiesVideoLayoutRef ?? internalStoriesVideoLayout
   const modelTextProgress = modelTextProgressRef ?? internalModelTextProgress
+  const visionGridProgress = visionGridProgressRef ?? internalVisionGridProgress
+  const visionModelTextProgress = visionModelTextProgressRef ?? internalVisionModelTextProgress
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
 
@@ -205,6 +200,8 @@ export default function AnimationCanvas({
           storiesVideoReveal={storiesVideoReveal}
           storiesVideoLayout={storiesVideoLayout}
           modelTextProgress={modelTextProgress}
+          visionGridProgress={visionGridProgress}
+          visionModelTextProgress={visionModelTextProgress}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>

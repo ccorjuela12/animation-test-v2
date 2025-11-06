@@ -159,7 +159,7 @@ export default function SliderTextContent({
       ScrollTrigger.create({
         trigger: section,
         start: 'top top',
-        end: '+=250%',
+        end: '+=320%',
         scrub: true,
         pin: true,
         anticipatePin: 1,

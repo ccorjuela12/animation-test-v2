@@ -3,16 +3,13 @@
 import { useProgress } from '@react-three/drei'
 import gsap from 'gsap'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ICONS, type IconPathDef } from '../Hero/icons'
+import { PathEntry } from '@/types/types'
+import { ICONS } from './utils/icons'
 
 const STROKE_COLOR = '#FF4000'
 const STROKE_WIDTH = 1
 
-type PathEntry = {
-  path: SVGPathElement
-  index: number
-  def: IconPathDef
-}
+
 
 export default function CanvasLoader() {
   const { active, progress } = useProgress()

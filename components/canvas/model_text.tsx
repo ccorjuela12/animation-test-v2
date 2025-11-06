@@ -1,19 +1,11 @@
 import { useRef } from 'react'
 import type { MutableRefObject, JSX } from 'react'
+import * as THREE from 'three'
 import { MathUtils, Group, type MeshPhysicalMaterial } from 'three'
 import { useFrame } from '@react-three/fiber'
-import { Center, MeshTransmissionMaterial, MeshTransmissionMaterialProps, Text3D } from '@react-three/drei'
-
-type GroupProps = JSX.IntrinsicElements['group']
-
-type ModelTextProps = GroupProps & {
-  animationProgressRef: MutableRefObject<number>
-  text?: string
-  size?: number
-  position?: [number, number, number]
-  scaleRange?: [number, number]
-  fadeSpeed?: number
-}
+import { Center, MeshTransmissionMaterial, MeshTransmissionMaterialProps, Text3D, useGLTF } from '@react-three/drei'
+import { GLTF } from 'three-stdlib'
+import { ModelTextProps } from '@/types/types'
 
 export default function ModelText({
   animationProgressRef,
@@ -22,6 +14,7 @@ export default function ModelText({
   position = [0, 0.18, -0.2],
   scaleRange = [1, 1.85],
   fadeSpeed = 6,
+  mode = 'fadeOut',
   ...groupProps
 }: ModelTextProps) {
   const groupRef = useRef<Group | null>(null)
@@ -33,8 +26,12 @@ export default function ModelText({
     const smoothing = 1 - Math.exp(-delta * fadeSpeed)
     smoothedProgress.current += (target - smoothedProgress.current) * smoothing
 
-    const scale = MathUtils.lerp(scaleRange[0], scaleRange[1], smoothedProgress.current)
-    const opacity = MathUtils.clamp(1 - smoothedProgress.current, 0, 1)
+    const easedProgress = MathUtils.clamp(smoothedProgress.current, 0, 1)
+    const scale = MathUtils.lerp(scaleRange[0], scaleRange[1], easedProgress)
+    const opacity =
+      mode === 'fadeIn'
+        ? MathUtils.clamp(easedProgress, 0, 1)
+        : MathUtils.clamp(1 - easedProgress, 0, 1)
 
     if (groupRef.current) {
       groupRef.current.scale.setScalar(scale)
@@ -49,7 +46,7 @@ export default function ModelText({
   })
 
   return (
-    <group ref={groupRef} {...groupProps}>
+    <group ref={groupRef} {...groupProps} position={position}>
       {/* Keep the logo visible through the text using a transmissive glass material. */}
       <Center position={position}>
         <Text3D

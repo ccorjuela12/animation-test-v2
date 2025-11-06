@@ -111,12 +111,27 @@ export default function StoriesSection({
         })
       }
 
+      const resetVideoState = () => {
+        videoShownRef.current = false
+        videoExpandedRef.current = false
+        videoStateRef.current.value = 0
+        storiesVideoRevealRef.current = 0
+        storiesVideoLayoutRef.current = 0
+        setVideoLayout(0, { immediate: true })
+        setIsReelLooping(false)
+        const containerEl = videoContainerRef.current
+        if (containerEl) {
+          videoContainerTweenRef.current?.kill()
+          gsap.set(containerEl, { autoAlpha: 0, yPercent: 8 })
+        }
+      }
+
       timelineRef.current = gsap
         .timeline({
           scrollTrigger: {
             trigger: section,
             start: 'top top',
-            end: '+=200%',
+            end: '+=280%',
             scrub: true,
             pin: true,
             anticipatePin: 1,
@@ -169,6 +184,12 @@ export default function StoriesSection({
                 textExitTweenRef.current?.kill()
                 textTimelineRef.current?.restart(true)
               }
+            },
+            onLeave: () => {
+              resetVideoState()
+            },
+            onLeaveBack: () => {
+              resetVideoState()
             },
           },
         })
@@ -350,7 +371,7 @@ export default function StoriesSection({
       className="relative flex h-screen flex-col items-center justify-center overflow-hidden"
     >
       {/* Future story animations will live here */}
-      <div className="container flex flex-col gap-20 py-36">
+      <div className="container flex flex-col  gap-20 py-36">
         <h2 ref={titleRef} className="h1 opacity-0">
           Where <span className="text-primary">stories</span>
           <br />
@@ -372,6 +393,7 @@ export default function StoriesSection({
       <div
         className="absolute left-[15%] top-[12%] z-20 flex h-[85%] w-[70%] flex-col justify-between gap-14 opacity-0"
         ref={videoContainerRef}
+        data-stories-reel-container
         onMouseLeave={() => setIsReelLooping(false)}
       >
         <PlayReel text="PLAY REEL" numberIcons={3} repeat={4} isLooping={isReelLooping} marqueeSpeed={18} direction="left" />

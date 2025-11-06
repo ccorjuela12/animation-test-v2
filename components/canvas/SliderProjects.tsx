@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
-import type { MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useVideoTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { RoundedVideoPlane } from './utils/utils'
+import { SliderCardProps, SliderProjectsProps } from '@/types/types'
 
 const CARD_SOURCES: string[] = [
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
@@ -22,10 +22,6 @@ const CARD_WIDTH = 1.45
 const CARD_HEIGHT = 0.75 
 const CARD_RADIUS = 0.08
 
-type SliderProjectsProps = {
-  revealRef: MutableRefObject<number>
-  activeRef?: MutableRefObject<number>
-}
 
 export default function SliderProjects({ revealRef, activeRef }: SliderProjectsProps) {
   const groupRef = useRef<THREE.Group | null>(null)
@@ -112,10 +108,6 @@ export default function SliderProjects({ revealRef, activeRef }: SliderProjectsP
       ))}
     </group>
   )
-}
-
-type SliderCardProps = {
-  videoSrc: string
 }
 
 function SliderCard({ videoSrc }: SliderCardProps) {

@@ -22,6 +22,8 @@ export default function Page() {
   const storiesVideoRevealRef = useRef(0)
   const storiesVideoLayoutRef = useRef(0)
   const modelTextProgressRef = useRef(0)
+  const visionGridProgressRef = useRef(0)
+  const visionModelTextProgressRef = useRef(0)
 
   useEffect(() => {
     const prompt = heroScroll.current
@@ -84,6 +86,8 @@ export default function Page() {
               storiesVideoRevealRef={storiesVideoRevealRef}
               storiesVideoLayoutRef={storiesVideoLayoutRef}
               modelTextProgressRef={modelTextProgressRef}
+              visionGridProgressRef={visionGridProgressRef}
+              visionModelTextProgressRef={visionModelTextProgressRef}
             />
             <p
               ref={heroScroll}
@@ -111,6 +115,8 @@ export default function Page() {
           storiesVideoRevealRef={storiesVideoRevealRef}
           storiesVideoLayoutRef={storiesVideoLayoutRef}
           modelTextProgressRef={modelTextProgressRef}
+          visionGridProgressRef={visionGridProgressRef}
+          visionModelTextProgressRef={visionModelTextProgressRef}
         />
       </main>
     </>

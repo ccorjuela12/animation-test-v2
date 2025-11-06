@@ -1,14 +1,5 @@
-export type IconPathDef = {
-  d: string;
-  finalFill?: string;
-};
+import { IconDef } from "@/types/types";
 
-export type IconDef = {
-  width: number;
-  height: number;
-  viewBox: string;
-  paths: IconPathDef[];
-};
 
 const WHITE = '#FFFFFF';
 const ORANGE = '#FF4000';

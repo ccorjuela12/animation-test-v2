@@ -127,3 +127,125 @@ export function RoundedVideoPlane({
     </group>
   )
 }
+
+
+//shaders
+export const vertexShaderGrid = /* glsl */`
+  varying vec2 vUv;
+  varying vec3 vWorld;
+
+  void main() {
+    vUv = uv;
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorld = world.xyz;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`
+
+export const fragmentShaderGrid = /* glsl */`
+  precision highp float;
+
+  varying vec2 vUv;
+  varying vec3 vWorld;
+
+  uniform float uTime;
+  uniform float uTunnelDepth;
+  uniform vec3 uColorNear;
+  uniform vec3 uColorFar;
+  uniform vec3 uGridColor;
+  uniform vec3 uGlowColor;
+  uniform vec2 uUvScale;
+  uniform vec2 uMinorScale;
+  uniform float uPanelType;
+  uniform float uDepthAxis;
+  uniform float uDepthFlip;
+  uniform float uLateralFlip;
+  uniform float uOpacity;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+      u.y
+    );
+  }
+
+  float gridLines(vec2 uv, vec2 scale, float widen) {
+    vec2 scaled = uv * scale;
+    vec2 g = abs(fract(scaled) - 0.5);
+    float d = min(g.x, g.y);
+    float fw = fwidth(d) * widen + 1e-5;
+    return 1.0 - smoothstep(fw, fw * 2.0, d);
+  }
+
+  void main() {
+    float depthCoord = (uDepthAxis < 0.5) ? vUv.x : vUv.y;
+    float lateralCoord = (uDepthAxis < 0.5) ? vUv.y : vUv.x;
+    if (uDepthFlip > 0.5) depthCoord = 1.0 - depthCoord;
+    if (uLateralFlip > 0.5) lateralCoord = 1.0 - lateralCoord;
+
+    float tunnelDepth = max(uTunnelDepth, 0.0001);
+    float depth = clamp(-vWorld.z / tunnelDepth, 0.0, 1.0);
+
+    float nearAmount = pow(1.0 - depth, 1.45);
+    vec3 base = mix(uColorFar, uColorNear, nearAmount);
+
+    float sideShadow = smoothstep(0.0, 0.9, abs(lateralCoord - 0.5) * 1.5);
+    base *= mix(1.05, 0.35, sideShadow);
+
+    if (uPanelType < 0.5) {
+      float centerGlow = exp(-pow((lateralCoord - 0.5) * 3.4, 2.0));
+      base += uGlowColor * centerGlow * pow(1.0 - depth, 2.3) * 0.45;
+    } else if (uPanelType < 1.5) {
+      float ceilingShade = smoothstep(0.0, 0.6, abs(lateralCoord - 0.5) * 1.8);
+      base *= mix(0.95, 0.4, ceilingShade);
+    } else if (uPanelType > 3.5) {
+      float vign = smoothstep(0.0, 0.85, depthCoord * (1.0 - depthCoord) * 4.0);
+      base *= mix(0.75, 0.25, vign);
+    }
+
+    vec2 gridUv = vec2(lateralCoord, depthCoord);
+    float major = gridLines(gridUv, uUvScale, 0.7);
+    float minor = gridLines(gridUv, uMinorScale, 0.9);
+    float gridValue = clamp(major + minor * 0.35, 0.0, 1.2);
+    if (uPanelType > 3.5) {
+      gridValue *= 0.25;
+    }
+
+    vec3 color = base + uGridColor * gridValue * (0.7 - depth * 0.35);
+
+    float depthGlow = pow(1.0 - depth, 3.0);
+    color += uGlowColor * depthGlow * 0.12;
+
+    if (uPanelType > 1.5 && uPanelType < 2.5) {
+      float smear = smoothstep(0.0, 0.28, depthCoord);
+      float scatter = smoothstep(0.75, 0.2, lateralCoord);
+      float staticGlow = smear * scatter;
+      
+    } else if (uPanelType > 2.5 && uPanelType < 3.5) {
+      float rim = smoothstep(0.2, 0.0, abs(lateralCoord - 0.5));
+      color += uGlowColor * rim * pow(1.0 - depth, 2.2) * 0.2;
+    }
+
+    float scan = sin(depth * 160.0 - uTime * 6.0) * 0.015;
+    color += uGlowColor * scan * 0.15;
+
+    float fog = smoothstep(0.55, 1.0, depth);
+    color = mix(color, uColorFar * 0.3, fog * 0.65);
+
+    float vignette = smoothstep(0.65, 1.1, depth) * 0.2;
+    color *= 1.0 - vignette;
+
+    color = mix(color, uColorFar, clamp(depth * 0.35, 0.0, 0.35));
+
+    color *= uOpacity;
+    gl_FragColor = vec4(color, uOpacity);
+  }
+`

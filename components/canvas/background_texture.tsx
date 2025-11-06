@@ -3,18 +3,16 @@ import type { MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { useTexture, Environment } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
+import { BackgroundTextureProps } from '@/types/types'
 
-type BackgroundTextureProps = {
-  sliderReveal: MutableRefObject<number>
-  glowReveal?: MutableRefObject<number>
-}
-
-export default function BackgroundTexture({ sliderReveal, glowReveal }: BackgroundTextureProps) {
-  const { viewport, camera } = useThree()
+export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgress }: BackgroundTextureProps) {
+  const { viewport, camera, scene } = useThree()
   const texture = useTexture('/BG.png')
   const glowRef = useRef<THREE.Mesh | null>(null)
   const glowSecondaryRef = useRef<THREE.Mesh | null>(null)
   const smoothedReveal = useRef(0)
+  const smoothedHide = useRef(0)
+  const planeRef = useRef<THREE.Mesh | null>(null)
 
   const envTexture = texture.clone()
   envTexture.mapping = THREE.EquirectangularReflectionMapping
@@ -46,7 +44,24 @@ export default function BackgroundTexture({ sliderReveal, glowReveal }: Backgrou
     const smoothing = 1 - Math.exp(-delta * 6)
     const revealTarget = Math.max(sliderReveal.current, glowReveal?.current ?? 0)
     smoothedReveal.current += (revealTarget - smoothedReveal.current) * smoothing
-    const intensity = THREE.MathUtils.smoothstep(smoothedReveal.current, 0.05, 0.95)
+    const hideTarget = THREE.MathUtils.clamp(hideProgress?.current ?? 0, 0, 1)
+    const hideSmoothing = 1 - Math.exp(-delta * 4.5)
+    smoothedHide.current += (hideTarget - smoothedHide.current) * hideSmoothing
+    const visibleFactor = THREE.MathUtils.clamp(1 - smoothedHide.current, 0, 1)
+    const baseIntensity = THREE.MathUtils.smoothstep(smoothedReveal.current, 0.05, 0.95)
+    const intensity = baseIntensity * visibleFactor
+
+    if (planeRef.current) {
+      const material = planeRef.current.material as THREE.MeshBasicMaterial | undefined
+      if (material) {
+        material.opacity = visibleFactor
+        material.transparent = true
+        material.needsUpdate = true
+      }
+      planeRef.current.visible = visibleFactor > 0.02
+    }
+
+    scene.environment = visibleFactor > 0.02 ? envTexture : null
 
     const updateGlow = (mesh: THREE.Mesh | null, baseScale: number, opacityScale = 0.4) => {
       if (!mesh) {
@@ -79,11 +94,13 @@ export default function BackgroundTexture({ sliderReveal, glowReveal }: Backgrou
       <Environment map={envTexture} background={false} />
 
       <mesh
+        ref={planeRef}
         position={[0, 0, planePositionZ]}
         scale={[viewport.width * backgroundScale, viewport.height * backgroundScale, 1]}
+        visible={false}
       >
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture} color="gray" toneMapped={false} />
+        <meshBasicMaterial map={texture} color="gray" toneMapped={false} transparent opacity={0} />
       </mesh>
 
       {glowTexture && (
@@ -98,6 +115,7 @@ export default function BackgroundTexture({ sliderReveal, glowReveal }: Backgrou
           />
         </mesh>
       )}
+      
       {glowTexture && (
         <mesh
           ref={glowSecondaryRef}

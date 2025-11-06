@@ -1,10 +1,10 @@
 import { useMemo, useRef } from 'react'
-import type { MutableRefObject } from 'react'
 import { Euler, MathUtils, Group, Mesh, MeshBasicMaterial, Quaternion, Vector3 } from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useVideoTexture } from '@react-three/drei'
 import { RoundedVideoPlane } from './utils/utils'
 import ModelText from './model_text'
+import { StoriesVideoProps } from '@/types/types'
 
 const CARD_WIDTH = [2.05, 4]
 const CARD_HEIGHT = [1, 2.1]
@@ -15,13 +15,9 @@ const FLIP_QUATERNION = new Quaternion().setFromEuler(new Euler(0, Math.PI, 0))
 const TEXT_FADE_THRESHOLD = 0.35
 const TEXT_HIDE_PROGRESS = 0.98
 const TEXT_FADE_SPEED = 14
+const FADE_OUT_SPEED = 2.5
 const WOBBLE_FREQUENCY = Math.PI * 1.75
 const WOBBLE_AMPLITUDE = 0.32
-
-type StoriesVideoProps = {
-  revealRef: MutableRefObject<number>
-  layoutRef: MutableRefObject<number>
-}
 
 const easeOutElastic = (t: number): number => {
   if (t <= 0) return 0
@@ -59,9 +55,12 @@ export default function StoriesVideo({ revealRef, layoutRef }: StoriesVideoProps
 
   useFrame((_, delta) => {
     const target = MathUtils.clamp(revealRef.current, 0, 1)
-    const smoothing = 1 - Math.exp(-delta * 6)
+    const targetIsIncreasing = target > smoothedReveal.current
+    const speed = targetIsIncreasing ? 6 : FADE_OUT_SPEED
+    const smoothing = 1 - Math.exp(-delta * speed)
     smoothedReveal.current += (target - smoothedReveal.current) * smoothing
     const progress = MathUtils.clamp(smoothedReveal.current, 0, 1)
+    const opacityProgress = MathUtils.smoothstep(progress, 0, 1)
 
     const layoutTarget = MathUtils.clamp(layoutRef.current, 0, 1)
     const layoutSmoothing = 1 - Math.exp(-delta * 6)
@@ -99,7 +98,8 @@ export default function StoriesVideo({ revealRef, layoutRef }: StoriesVideoProps
     group.scale.setScalar(1)
     billboardQuat.copy(camera.quaternion).multiply(FLIP_QUATERNION)
     group.quaternion.copy(billboardQuat)
-    group.visible = progress > VISIBLE_THRESHOLD
+    const isVisible = opacityProgress > VISIBLE_THRESHOLD || target > VISIBLE_THRESHOLD
+    group.visible = isVisible
 
     const widthScale = MathUtils.lerp(1, CARD_WIDTH[1] / CARD_WIDTH[0], easedScale)
     const heightScale = MathUtils.lerp(1, CARD_HEIGHT[1] / CARD_HEIGHT[0], easedScale)
@@ -114,7 +114,7 @@ export default function StoriesVideo({ revealRef, layoutRef }: StoriesVideoProps
       if (child instanceof Mesh && child.material) {
         const material = child.material as MeshBasicMaterial
         material.transparent = true
-        material.opacity = progress
+        material.opacity = opacityProgress
         material.needsUpdate = true
       }
     })

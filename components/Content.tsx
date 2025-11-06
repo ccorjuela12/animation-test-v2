@@ -3,16 +3,7 @@ import HeroFooterText from './taskListViews/HeroFooterText'
 import SliderTextContent from './taskListViews/SliderTextContent'
 import StoriesSection from './taskListViews/StoriesSection'
 import VisionSection from './taskListViews/VisionSection'
-
-type ContentPageProps = {
-  logoVisibilityRef: MutableRefObject<number>
-  sliderRevealRef: MutableRefObject<number>
-  sliderActiveRef: MutableRefObject<number>
-  glowRevealRef: MutableRefObject<number>
-  storiesVideoRevealRef: MutableRefObject<number>
-  storiesVideoLayoutRef: MutableRefObject<number>
-  modelTextProgressRef: MutableRefObject<number>
-}
+import { ContentPageProps } from '@/types/types'
 
 export default function ContentPage({
   logoVisibilityRef,
@@ -22,6 +13,8 @@ export default function ContentPage({
   storiesVideoRevealRef,
   storiesVideoLayoutRef,
   modelTextProgressRef,
+  visionGridProgressRef,
+  visionModelTextProgressRef,
 }: ContentPageProps) {
   return (
     <div className="contentTaksList">
@@ -32,7 +25,13 @@ export default function ContentPage({
         storiesVideoRevealRef={storiesVideoRevealRef}
         storiesVideoLayoutRef={storiesVideoLayoutRef}
       />
-      <VisionSection/>
+      <VisionSection
+        storiesVideoRevealRef={storiesVideoRevealRef}
+        storiesVideoLayoutRef={storiesVideoLayoutRef}
+        modelTextProgressRef={modelTextProgressRef}
+        visionGridProgressRef={visionGridProgressRef}
+        visionModelTextProgressRef={visionModelTextProgressRef}
+      />
       
     </div>
   )

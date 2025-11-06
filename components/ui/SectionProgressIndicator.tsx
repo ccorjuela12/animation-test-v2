@@ -1,18 +1,7 @@
 'use client'
 
+import { SectionConfig, SectionEntry } from '@/types/types'
 import { useEffect, useRef, useState } from 'react'
-
-type SectionEntry = {
-  id: string
-  label: string
-  progress: number
-}
-
-type SectionConfig = {
-  node: HTMLElement
-  id: string
-  label: string
-}
 
 export default function SectionProgressIndicator() {
   const [sections, setSections] = useState<SectionEntry[]>([])
