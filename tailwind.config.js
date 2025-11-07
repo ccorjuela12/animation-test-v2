@@ -2,7 +2,6 @@ const { round } = require('three/tsl');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // En Tailwind v4 no es necesario `content`, el motor es JIT por defecto.
   theme: {
     extend: {
       colors: {
@@ -30,17 +29,14 @@ module.exports = {
   plugins: [
     function ({ addUtilities, theme }) {
       const newUtilities = {
-        // Utilidad para stroke acento (coincide con los requisitos del SVG #4)
         '.stroke-accent': {
           stroke: theme('colors.primary'),
           'stroke-width': '1',
         },
-        // Utilidad para solidificar SVGs (relleno blanco, sin contorno)
         '.svg-solid': {
           fill: '#ffffff',
           stroke: 'none',
         },
-        // Texto con contorno (útil para efectos de títulos)
         '.outline-text': {
           color: 'transparent',
           '-webkit-text-stroke': '1px currentColor',

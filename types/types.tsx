@@ -139,3 +139,8 @@ export interface PlayReelProps {
   onMouseEnter?: MouseEventHandler<HTMLDivElement>
   onMouseLeave?: MouseEventHandler<HTMLDivElement>
 }
+
+export type GradientBackgroundProps = {
+  position?: Vector3Tuple
+  rotation?: Vector3Tuple
+}

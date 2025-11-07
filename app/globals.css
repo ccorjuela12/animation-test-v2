@@ -46,6 +46,10 @@ h2, .h2{
   @apply text-3xl md:text-4xl;
   font-family: var(--font-unison-pro-bold), ui-sans-serif, system-ui;
 }
+h2.h1-variant{
+  @apply text-3xl md:text-6xl;
+
+}
 .container {
   @apply max-w-screen-2xl mx-auto;
 }

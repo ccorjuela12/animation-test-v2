@@ -4,8 +4,45 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Vector3Tuple, Euler } from 'three'
-import { GridPanelProps, GridTunnelProps, PanelType } from '@/types/types'
+import { GridPanelProps, GridTunnelProps, PanelType, GradientBackgroundProps } from '@/types/types'
 import {vertexShaderGrid as vertexShader, fragmentShaderGrid as fragmentShader} from './utils/utils'
+
+function GradientBackground({ position, rotation }: GradientBackgroundProps) {
+  const { viewport } = useThree()
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color('#0F0E0E') },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform vec3 uColor;
+        void main() {
+          // CSS: linear-gradient(180deg, rgba(15, 14, 14, 0.00) 0%, #0F0E0E 84.62%)
+          // vUv.y is 0 at bottom, 1 at top. We want transparent at top.
+          float alpha = smoothstep(1.0, 0.1538, vUv.y);
+          gl_FragColor = vec4(uColor, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+    })
+  }, [])
+
+  return (
+    <mesh position={position} rotation={rotation} scale={[viewport.width, viewport.height / 2, 1]}>
+      <planeGeometry args={[2, 1]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  )
+}
 
 function GridPanel({
   geometry,
@@ -26,8 +63,8 @@ function GridPanel({
         uTime: { value: 0 },
         uTunnelDepth: { value: tunnelDepth },
         uColorNear: { value: new THREE.Color('#1a1d24') },
-        uColorFar: { value: new THREE.Color('#020203') },
-        uGridColor: { value: new THREE.Color('#a2a3a7') },
+        uColorFar: { value: new THREE.Color('#3B3939') },
+        uGridColor: { value: new THREE.Color('#5C5C5C') },
         uGlowColor: { value: new THREE.Color('#F15A24') },
         uUvScale: { value: new THREE.Vector2(uvScale[0], uvScale[1]) },
         uMinorScale: { value: new THREE.Vector2(minorScale[0], minorScale[1]) },
@@ -248,47 +285,51 @@ export default function GridTunnel({ progressRef }: GridTunnelProps = {}) {
   }, [])
 
   return (
-    <group ref={groupRef} position={[0, 0, -1.8]}>
-      {panels.map((panel) => (
-        <GridPanel
-          key={panel.key}
-          geometry={panel.geometry}
-          position={panel.position}
-          rotation={panel.rotation}
-          uvScale={panel.uvScale}
-          minorScale={panel.minorScale}
-          panelType={panel.panelType}
-          depthAxis={panel.depthAxis}
-          depthFlip={panel.depthFlip}
-          lateralFlip={panel.lateralFlip}
-          tunnelDepth={panel.tunnelDepth}
-          progressRef={panel.progressRef}
-        />
-      ))}
-      {glowTexture && (
-        glowPositions.map((glowPosition, index) =>(
-          <mesh
-            key={index}
-            ref={glowRef}
-            position={glowPosition}
-            rotation={[0, 0, 0]}
-            // scale={[4, 6,1]}
-            scale={index < 1 ? [4, 6, 1] : [4, 6,1]}
-            renderOrder={5}
-          >
-            <planeGeometry args={[2, 1]} />
-            <meshBasicMaterial
-              map={glowTexture}
-              transparent
-              opacity={0.14}
-              depthTest={false}
-              depthWrite={false}
-              toneMapped={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-        ))
-      )}
-    </group>
+    <>
+      <group ref={groupRef} position={[0, 0, -1.8]}>
+        <GradientBackground position={[0, viewport.height * -0.45, 0]} />
+        <GradientBackground position={[0, viewport.height * 0.40, 0]} rotation={[0, 0, -3.15]} />
+        {panels.map((panel) => (
+          <GridPanel
+            key={panel.key}
+            geometry={panel.geometry}
+            position={panel.position}
+            rotation={panel.rotation}
+            uvScale={panel.uvScale}
+            minorScale={panel.minorScale}
+            panelType={panel.panelType}
+            depthAxis={panel.depthAxis}
+            depthFlip={panel.depthFlip}
+            lateralFlip={panel.lateralFlip}
+            tunnelDepth={panel.tunnelDepth}
+            progressRef={panel.progressRef}
+          />
+        ))}
+        {glowTexture && (
+          glowPositions.map((glowPosition, index) =>(
+            <mesh
+              key={index}
+              ref={glowRef}
+              position={glowPosition}
+              rotation={[0, 0, 0]}
+              // scale={[4, 6,1]}
+              scale={index < 1 ? [4, 6, 1] : [4, 6,1]}
+              renderOrder={5}
+            >
+              <planeGeometry args={[2, 1]} />
+              <meshBasicMaterial
+                map={glowTexture}
+                transparent
+                opacity={0.12}
+                depthTest={false}
+                depthWrite={false}
+                toneMapped={false}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          ))
+        )}
+      </group>
+    </>
   )
 }

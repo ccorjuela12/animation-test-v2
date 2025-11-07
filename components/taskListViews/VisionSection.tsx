@@ -113,9 +113,9 @@ export default function VisionSection({
       data-section-label="Vision"
       className="relative flex h-screen flex-col justify-end overflow-hidden"
     >
-      <div className="container gap-12 pb-10  flex flex-col items-center perspective-dramatic ">
-        <h2 className="h1 max-w-4xl text-center rotate-x-6">
-          Step into the grid tunnel.
+      <div className="container gap-12 pb-20  flex flex-col items-center perspective-dramatic ">
+        <h2 className="h1-variant max-w-5xl text-center rotate-x-6">
+          Because Content<br/> Should<br/> Look Generic.
         </h2>
       </div>
     </section>
