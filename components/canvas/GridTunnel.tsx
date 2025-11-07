@@ -7,12 +7,13 @@ import type { Vector3Tuple, Euler } from 'three'
 import { GridPanelProps, GridTunnelProps, PanelType, GradientBackgroundProps } from '@/types/types'
 import {vertexShaderGrid as vertexShader, fragmentShaderGrid as fragmentShader} from './utils/utils'
 
-function GradientBackground({ position, rotation }: GradientBackgroundProps) {
+function GradientBackground({ position, rotation, progressRef }: GradientBackgroundProps & { progressRef: React.MutableRefObject<number> }) {
   const { viewport } = useThree()
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
         uColor: { value: new THREE.Color('#0F0E0E') },
+        uOpacity: { value: 0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -24,17 +25,22 @@ function GradientBackground({ position, rotation }: GradientBackgroundProps) {
       fragmentShader: `
         varying vec2 vUv;
         uniform vec3 uColor;
+        uniform float uOpacity;
         void main() {
           // CSS: linear-gradient(180deg, rgba(15, 14, 14, 0.00) 0%, #0F0E0E 84.62%)
           // vUv.y is 0 at bottom, 1 at top. We want transparent at top.
           float alpha = smoothstep(1.0, 0.1538, vUv.y);
-          gl_FragColor = vec4(uColor, alpha);
+          gl_FragColor = vec4(uColor, alpha * uOpacity);
         }
       `,
       transparent: true,
       depthWrite: false,
     })
   }, [])
+
+  useFrame(() => {
+    material.uniforms.uOpacity.value = THREE.MathUtils.clamp(progressRef.current, 0, 1)
+  })
 
   return (
     <mesh position={position} rotation={rotation} scale={[viewport.width, viewport.height / 2, 1]}>
@@ -287,8 +293,8 @@ export default function GridTunnel({ progressRef }: GridTunnelProps = {}) {
   return (
     <>
       <group ref={groupRef} position={[0, 0, -1.8]}>
-        <GradientBackground position={[0, viewport.height * -0.45, 0]} />
-        <GradientBackground position={[0, viewport.height * 0.40, 0]} rotation={[0, 0, -3.15]} />
+        <GradientBackground position={[0, viewport.height * -0.45, 0]} progressRef={internalProgressRef} />
+        <GradientBackground position={[0, viewport.height * 0.40, 0]} rotation={[0, 0, -3.15]} progressRef={internalProgressRef} />
         {panels.map((panel) => (
           <GridPanel
             key={panel.key}

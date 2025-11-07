@@ -13,7 +13,7 @@ type IgniteEmitterProps = {
   visibilityRef?: MutableRefObject<number>
 }
 
-export default function IgniteEmitter({ color = '#ff7a00', visibilityRef }: IgniteEmitterProps) {
+export default function IgniteEmitter2({ color = '#ff7a00', visibilityRef }: IgniteEmitterProps) {
   const sun = useRef<THREE.Mesh>(null)
   const halo = useRef<THREE.Mesh>(null)
   const pointLight = useRef<THREE.PointLight>(null)

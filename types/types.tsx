@@ -47,6 +47,7 @@ export type SceneProps = {
   modelTextProgress: MutableRefObject<number>
   visionGridProgress: MutableRefObject<number>
   visionModelTextProgress: MutableRefObject<number>
+  loaderReady: MutableRefObject<number>
 }
 
 export type AnimationCanvasProps = {
@@ -60,6 +61,7 @@ export type AnimationCanvasProps = {
   modelTextProgressRef?: MutableRefObject<number>
   visionGridProgressRef?: MutableRefObject<number>
   visionModelTextProgressRef?: MutableRefObject<number>
+  loaderReadyRef?: MutableRefObject<number>
 }
 
 //Content Section Pages

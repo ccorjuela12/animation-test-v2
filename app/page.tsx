@@ -24,6 +24,7 @@ export default function Page() {
   const modelTextProgressRef = useRef(0)
   const visionGridProgressRef = useRef(0)
   const visionModelTextProgressRef = useRef(0)
+  const loaderReadyRef = useRef(0)
 
   useEffect(() => {
     const prompt = heroScroll.current
@@ -66,7 +67,9 @@ export default function Page() {
 
   return (
     <>
-      <CanvasLoader />
+      <CanvasLoader onComplete={() => {
+        loaderReadyRef.current = 1
+      }} />
       {/* <ScrollProgressBar /> */}
       <SectionProgressIndicator />
       <main ref={containerRef} className="relative bg-black text-white">
@@ -88,6 +91,7 @@ export default function Page() {
               modelTextProgressRef={modelTextProgressRef}
               visionGridProgressRef={visionGridProgressRef}
               visionModelTextProgressRef={visionModelTextProgressRef}
+              loaderReadyRef={loaderReadyRef}
             />
             <p
               ref={heroScroll}

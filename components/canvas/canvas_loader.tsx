@@ -9,9 +9,11 @@ import { ICONS } from './utils/icons'
 const STROKE_COLOR = '#FF4000'
 const STROKE_WIDTH = 1
 
+type CanvasLoaderProps = {
+  onComplete?: () => void
+}
 
-
-export default function CanvasLoader() {
+export default function CanvasLoader({ onComplete }: CanvasLoaderProps) {
   const { active, progress } = useProgress()
   const overlayRef = useRef<HTMLDivElement | null>(null)
   const iconsWrapperRef = useRef<HTMLDivElement | null>(null)
@@ -26,6 +28,16 @@ export default function CanvasLoader() {
   const activeRef = useRef(active)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const [overlayActive, setOverlayActive] = useState(true)
+  const completionAnnouncedRef = useRef(false)
+
+  const announceComplete = useCallback(() => {
+    if (completionAnnouncedRef.current) {
+      return
+    }
+
+    completionAnnouncedRef.current = true
+    onComplete?.()
+  }, [onComplete])
 
   const registerPath = useCallback(
     (index: number) => (element: SVGPathElement | null) => {
@@ -118,6 +130,7 @@ export default function CanvasLoader() {
     const overlay = overlayRef.current
     if (!overlay) {
       setOverlayActive(false)
+      announceComplete()
       return
     }
 
@@ -129,6 +142,7 @@ export default function CanvasLoader() {
         exitTimelineRef.current = null
         setOverlayActive(false)
         resetScrollPosition()
+        announceComplete()
       },
     })
 
@@ -149,7 +163,7 @@ export default function CanvasLoader() {
       },
       0,
     )
-  }, [overlayActive, resetScrollPosition])
+  }, [announceComplete, overlayActive, resetScrollPosition])
 
   const drawPaths = useCallback(
     (entries: PathEntry[]) => {
@@ -186,6 +200,7 @@ export default function CanvasLoader() {
   useEffect(() => {
     if (active) {
       setOverlayActive(true)
+      completionAnnouncedRef.current = false
     }
   }, [active])
 

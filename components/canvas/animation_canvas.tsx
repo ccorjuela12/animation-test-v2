@@ -15,6 +15,10 @@ import SliderProjects from './SliderProjects'
 import StoriesVideo from './StoriesVideo'
 import GridTunnel from './GridTunnel'
 import { AnimationCanvasProps, SceneProps } from '@/types/types'
+import SparksIgnaite from './SparksIgnaite'
+import IgniteEmitter from './IgniteEmiter'
+import { ModelAI } from './modelAI'
+
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -31,10 +35,17 @@ function Scene({
   modelTextProgress,
   visionGridProgress,
   visionModelTextProgress,
+  loaderReady,
 }: SceneProps) {
   const groupRef = useRef<Group>(null)
   const logoRef = useRef<Mesh>(null)
   const smoothedLogo = useRef(1)
+  const igniteGroupRef = useRef<Group>(null)
+  const sparksGroupRef = useRef<Group>(null)
+  const igniteReveal = useRef(0)
+  const sparksReveal = useRef(0)
+  const sparksIntro = useRef(0)
+  const introProgress = useRef(0)
 
   useFrame((_, delta) => {
     const activeAmount = MathUtils.clamp(sliderActive.current, 0, 1)
@@ -66,13 +77,49 @@ function Scene({
 
       logoRef.current.visible = visibility > 0.04
     }
+
+    const loaderReadyValue = MathUtils.clamp(loaderReady.current ?? 1, 0, 1)
+    introProgress.current = loaderReadyValue
+
+    const igniteEntrance = MathUtils.smoothstep(introProgress.current, 0.05, 0.75)
+    const sliderRevealAmount = MathUtils.clamp(sliderReveal.current, 0, 1)
+    const sliderHide = Math.max(sliderRevealAmount, activeAmount)
+    const hideFactor = 1 - MathUtils.smoothstep(sliderHide, 0.12, 0.4)
+    const igniteTarget = igniteEntrance * hideFactor
+    const igniteSmoothing = 1 - Math.exp(-delta * 5.5)
+    igniteReveal.current += (igniteTarget - igniteReveal.current) * igniteSmoothing
+
+    sparksIntro.current = Math.max(sparksIntro.current, igniteReveal.current)
+    const sparksEntrance = MathUtils.smoothstep(sparksIntro.current, 0.6, 0.98)
+    const sparksTarget = sparksEntrance
+    const sparksSmoothing = 1 - Math.exp(-delta * 5)
+    sparksReveal.current += (sparksTarget - sparksReveal.current) * sparksSmoothing
+
+    if (igniteGroupRef.current) {
+      const scale = MathUtils.lerp(0.02, 1, igniteReveal.current)
+      igniteGroupRef.current.scale.setScalar(scale)
+      igniteGroupRef.current.visible = igniteReveal.current > 0.01
+    }
+
+    if (sparksGroupRef.current) {
+      const scale = MathUtils.lerp(0.02, 1, sparksReveal.current)
+      sparksGroupRef.current.scale.setScalar(scale)
+      sparksGroupRef.current.visible = sparksReveal.current > 0.01
+    }
   })
 
   return (
     <>
       <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} hideProgress={visionGridProgress} />
+      <group ref={igniteGroupRef} scale={0.02}>
+        <IgniteEmitter scale={3} />
+      </group>
+      <group ref={sparksGroupRef} scale={0.02}>
+        <SparksIgnaite count={120} sizeRange={[0.1, 0.15]} rangeX={[2.5, -2.5]} rangeY={[-2, 2]} />
+      </group>
       <group ref={groupRef}>
-        <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.18, -0.2]}/>
+        <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.1, -0.2]}/>
+        {/* <ModelAI/> */}
       </group>
       <ModelText
         animationProgressRef={visionModelTextProgress}
@@ -104,6 +151,7 @@ export default function AnimationCanvas({
   modelTextProgressRef,
   visionGridProgressRef,
   visionModelTextProgressRef,
+  loaderReadyRef,
 }: AnimationCanvasProps) {
   const rotationTarget = useRef(0)
   const internalSliderReveal = useRef(0)
@@ -115,6 +163,7 @@ export default function AnimationCanvas({
   const internalModelTextProgress = useRef(0)
   const internalVisionGridProgress = useRef(0)
   const internalVisionModelTextProgress = useRef(0)
+  const internalLoaderReady = useRef(1)
   const sliderReveal = sliderRevealRef ?? internalSliderReveal
   const logoVisibility = logoVisibilityRef ?? internalLogoVisibility
   const sliderActive = sliderActiveRef ?? internalSliderActive
@@ -124,6 +173,7 @@ export default function AnimationCanvas({
   const modelTextProgress = modelTextProgressRef ?? internalModelTextProgress
   const visionGridProgress = visionGridProgressRef ?? internalVisionGridProgress
   const visionModelTextProgress = visionModelTextProgressRef ?? internalVisionModelTextProgress
+  const loaderReady = loaderReadyRef ?? internalLoaderReady
   const usingExternalSlider = Boolean(sliderRevealRef)
   const usingExternalLogo = Boolean(logoVisibilityRef)
 
@@ -202,6 +252,7 @@ export default function AnimationCanvas({
           modelTextProgress={modelTextProgress}
           visionGridProgress={visionGridProgress}
           visionModelTextProgress={visionModelTextProgress}
+          loaderReady={loaderReady}
         />
         {/* <IgniteEmitter visibilityRef={logoVisibility} /> */}
       </Suspense>
