@@ -96,8 +96,10 @@ export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgre
     updateGlow(glowSecondaryRef.current, 10.8, 0.16)
 
     const heroSceneStrength = THREE.MathUtils.clamp(1 - (sliderReveal.current ?? 0), 0, 1)
+    const glowTrigger = Math.max(heroSceneStrength, glowReveal?.current ?? 0)
     const centerFade = 1 - THREE.MathUtils.smoothstep(intensity, 0.12, 0.5)
-    const heroPresence = THREE.MathUtils.clamp(heroSceneStrength * centerFade, 0, 1)
+    const visibilityGate = THREE.MathUtils.clamp(1 - smoothedHide.current, 0, 1)
+    const heroPresence = THREE.MathUtils.clamp(glowTrigger * centerFade * visibilityGate, 0, 1)
     updateGlow(centerGlowRef.current, 5.2, 0.25, heroPresence)
   })
 

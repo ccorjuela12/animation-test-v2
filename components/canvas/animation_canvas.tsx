@@ -18,6 +18,7 @@ import { AnimationCanvasProps, SceneProps } from '@/types/types'
 import SparksIgnaite from './SparksIgnaite'
 import IgniteEmitter from './IgniteEmiter'
 import { ModelAI } from './modelAI'
+import LogoBillboard from './LogoBillboard'
 
 
 gsap.registerPlugin(ScrollTrigger)
@@ -123,15 +124,21 @@ function Scene({
         <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.1, -0.2]}/>
         {/* <ModelAI/> */}
       </group>
+      <Center position={[0, 0.1, -0.6]}>
+        <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, .5]} />
+        
+      </Center>
+      {/* <group ref={logoRef} position={[0, 0.1, -0.4]}>
+          <LogoBillboard width={5} gap={0} />
+        </group> */}
+      
 
       {/* Animation 2 scene */}
       <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
 
       {/* Animation 3 scene */}
       <StoriesVideo revealRef={storiesVideoReveal} layoutRef={storiesVideoLayout} />
-      <Center position={[0, 0.1, -0.4]}>
-        <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
-      </Center>
+      
       
       {/* Animation 4 scene */}
       <ModelText

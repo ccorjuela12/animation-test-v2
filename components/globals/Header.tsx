@@ -13,7 +13,7 @@ export default function Header() {
             <div className="container pt-8 pb-4 px-20 flex justify-between items-center">
                 <Link href="/">
                     <Image
-                        src="/logo.svg"
+                        src="/logo_ignaite.svg"
                         alt="Logo"
                         width={136}
                         height={16}
