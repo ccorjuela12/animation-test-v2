@@ -110,6 +110,7 @@ function Scene({
 
   return (
     <>
+      {/* Animation 1 scene */}
       <BackgroundTexture sliderReveal={sliderReveal} glowReveal={glowReveal} hideProgress={visionGridProgress} />
       <group ref={igniteGroupRef} scale={0.02}>
         <IgniteEmitter scale={3} />
@@ -117,10 +118,22 @@ function Scene({
       <group ref={sparksGroupRef} scale={0.02}>
         <SparksIgnaite count={120} sizeRange={[0.1, 0.15]} rangeX={[2.5, -2.5]} rangeY={[-2, 2]} />
       </group>
+
       <group ref={groupRef}>
         <ModelText animationProgressRef={modelTextProgress} text={'AI'} size={1.65} position={[0, 0.1, -0.2]}/>
         {/* <ModelAI/> */}
       </group>
+
+      {/* Animation 2 scene */}
+      <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
+
+      {/* Animation 3 scene */}
+      <StoriesVideo revealRef={storiesVideoReveal} layoutRef={storiesVideoLayout} />
+      <Center position={[0, 0.1, -0.4]}>
+        <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
+      </Center>
+      
+      {/* Animation 4 scene */}
       <ModelText
         animationProgressRef={visionModelTextProgress}
         text={'AI'}
@@ -130,11 +143,6 @@ function Scene({
         fadeSpeed={4.5}
         mode="fadeIn"
       />
-      <StoriesVideo revealRef={storiesVideoReveal} layoutRef={storiesVideoLayout} />
-      <Center position={[0, 0.1, -0.4]}>
-        <DreiImage ref={logoRef} url="/logo.png" transparent opacity={1} scale={[5, 1]} />
-      </Center>
-      <SliderProjects revealRef={sliderReveal} activeRef={sliderActive} />
       <GridTunnel progressRef={visionGridProgress} />
     </>
   )

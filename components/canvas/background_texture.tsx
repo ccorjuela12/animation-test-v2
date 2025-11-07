@@ -10,6 +10,7 @@ export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgre
   const texture = useTexture('/BG.png')
   const glowRef = useRef<THREE.Mesh | null>(null)
   const glowSecondaryRef = useRef<THREE.Mesh | null>(null)
+  const centerGlowRef = useRef<THREE.Mesh | null>(null)
   const smoothedReveal = useRef(0)
   const smoothedHide = useRef(0)
   const planeRef = useRef<THREE.Mesh | null>(null)
@@ -63,24 +64,41 @@ export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgre
 
     scene.environment = visibleFactor > 0.02 ? envTexture : null
 
-    const updateGlow = (mesh: THREE.Mesh | null, baseScale: number, opacityScale = 0.4) => {
+    const updateGlow = (
+      mesh: THREE.Mesh | null,
+      baseScale: number,
+      opacityScale = 0.4,
+      intensityOverride?: number,
+    ) => {
       if (!mesh) {
         return
       }
 
       const material = mesh.material as THREE.MeshBasicMaterial | undefined
       if (material) {
-        material.opacity = opacityScale * intensity
+        const appliedIntensity = THREE.MathUtils.clamp(
+          intensityOverride ?? intensity,
+          0,
+          1,
+        )
+        material.opacity = opacityScale * appliedIntensity
         material.needsUpdate = true
+        mesh.visible = appliedIntensity > 0.02
+        const scale = baseScale * THREE.MathUtils.lerp(0.85, 1.1, appliedIntensity)
+        mesh.scale.set(scale, scale, 1)
+      } else {
+        mesh.visible = false
+        mesh.scale.setScalar(baseScale)
       }
-
-      mesh.visible = intensity > 0.02
-      const scale = baseScale * THREE.MathUtils.lerp(0.85, 1.1, intensity)
-      mesh.scale.set(scale, scale, 1)
     }
 
     updateGlow(glowRef.current, 6.5, 0.18)
     updateGlow(glowSecondaryRef.current, 10.8, 0.16)
+
+    const heroSceneStrength = THREE.MathUtils.clamp(1 - (sliderReveal.current ?? 0), 0, 1)
+    const centerFade = 1 - THREE.MathUtils.smoothstep(intensity, 0.12, 0.5)
+    const heroPresence = THREE.MathUtils.clamp(heroSceneStrength * centerFade, 0, 1)
+    updateGlow(centerGlowRef.current, 5.2, 0.25, heroPresence)
   })
 
   const planePositionZ = -20
@@ -88,6 +106,7 @@ export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgre
   const backgroundScale = distance / camera.position.z
   const glowPosition: [number, number, number] = [viewport.width * 0.9, 0, -2.5]
   const glowSecondaryPosition: [number, number, number] = [-viewport.width * 0.8, -3.95, -2.5]
+  const centerGlowPosition: [number, number, number] = [0, 0, 0]
 
   return (
     <>
@@ -106,6 +125,19 @@ export default function BackgroundTexture({ sliderReveal, glowReveal, hideProgre
       {glowTexture && (
         <mesh ref={glowRef} position={glowPosition} rotation={[0, 0, 0]} visible={false}>
           <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial
+            map={glowTexture}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
+      
+      {glowTexture && (
+        <mesh ref={centerGlowRef} position={centerGlowPosition} rotation={[0, 0, 0]} visible={false}>
+          <planeGeometry args={[.5, .5]} />
           <meshBasicMaterial
             map={glowTexture}
             transparent

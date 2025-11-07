@@ -29,6 +29,7 @@ export default function CanvasLoader({ onComplete }: CanvasLoaderProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const [overlayActive, setOverlayActive] = useState(true)
   const completionAnnouncedRef = useRef(false)
+  const [iconScale, setIconScale] = useState(1)
 
   const announceComplete = useCallback(() => {
     if (completionAnnouncedRef.current) {
@@ -198,6 +199,25 @@ export default function CanvasLoader({ onComplete }: CanvasLoaderProps) {
   }, [])
 
   useEffect(() => {
+    const computeScale = () => {
+      if (typeof window === 'undefined') {
+        return
+      }
+
+      const width = window.innerWidth - (window.innerWidth * 0.55)
+      const normalized = width / 1440
+      const nextScale = Math.min(1.35, Math.max(0.55, normalized))
+      setIconScale(nextScale)
+    }
+
+    computeScale()
+    window.addEventListener('resize', computeScale)
+    return () => {
+      window.removeEventListener('resize', computeScale)
+    }
+  }, [])
+
+  useEffect(() => {
     if (active) {
       setOverlayActive(true)
       completionAnnouncedRef.current = false
@@ -307,28 +327,32 @@ export default function CanvasLoader({ onComplete }: CanvasLoaderProps) {
         className="flex flex-col items-center justify-center gap-2.5"
       >
         <div className="flex items-center justify-center gap-2.5">
-          {ICONS.map((icon, index) => (
-            <svg
-              key={index}
-              xmlns="http://www.w3.org/2000/svg"
-              width={icon.width}
-              height={icon.height}
-              viewBox={icon.viewBox}
-              fill="none"
-            >
-              {icon.paths.map((pathDef) => {
-                pathIndex += 1
-                return (
-                  <path
-                    key={`${pathIndex}-${pathDef.d.slice(0, 12)}`}
-                    ref={registerPath(pathIndex)}
-                    d={pathDef.d}
-                    fill="none"
-                  />
-                )
-              })}
-            </svg>
-          ))}
+          {ICONS.map((icon, index) => {
+            const scaledWidth = icon.width * iconScale
+            const scaledHeight = icon.height * iconScale
+            return (
+              <svg
+                key={index}
+                xmlns="http://www.w3.org/2000/svg"
+                width={scaledWidth}
+                height={scaledHeight}
+                viewBox={icon.viewBox}
+                fill="none"
+              >
+                {icon.paths.map((pathDef) => {
+                  pathIndex += 1
+                  return (
+                    <path
+                      key={`${pathIndex}-${pathDef.d.slice(0, 12)}`}
+                      ref={registerPath(pathIndex)}
+                      d={pathDef.d}
+                      fill="none"
+                    />
+                  )
+                })}
+              </svg>
+            )
+          })}
         </div>
       </div>
     </div>

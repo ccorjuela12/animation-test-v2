@@ -2,6 +2,7 @@
 
 import * as THREE from 'three'
 import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 
 type SparksIgnaiteProps = {
   count?: number
@@ -12,6 +13,7 @@ type SparksIgnaiteProps = {
   colorInner?: string
   colorOuter?: string
   stretchRange?: [number, number]
+  spawnSpeed?: number
 }
 
 /**
@@ -26,6 +28,7 @@ export default function SparksIgnaite({
   colorInner = '#ffb05c',
   colorOuter = '#ff3b00',
   stretchRange = [0.6, 2.4],
+  spawnSpeed = 0.08,
 }: SparksIgnaiteProps) {
   const pointsRef = useRef<THREE.Points>(null!)
 
@@ -35,6 +38,7 @@ export default function SparksIgnaite({
     const heats = new Float32Array(count)
     const sizes = new Float32Array(count)
     const stretches = new Float32Array(count)
+    const seeds = new Float32Array(count)
 
     for (let i = 0; i < count; i++) {
       const base = i * 3
@@ -50,9 +54,10 @@ export default function SparksIgnaite({
       heats[i] = Math.random()
       sizes[i] = Math.random()
       stretches[i] = Math.random()
+      seeds[i] = Math.random()
     }
 
-    return { positions, tilts, heats, sizes, stretches }
+    return { positions, tilts, heats, sizes, stretches, seeds }
   }, [count, rangeX, rangeY, rangeZ])
 
   const uniforms = useMemo(
@@ -63,9 +68,15 @@ export default function SparksIgnaite({
       uStretchMax: { value: stretchRange[1] },
       uColorInner: { value: new THREE.Color(colorInner) },
       uColorOuter: { value: new THREE.Color(colorOuter) },
+      uTime: { value: 0 },
+      uSpawnSpeed: { value: spawnSpeed },
     }),
-    [sizeRange, stretchRange, colorInner, colorOuter],
+    [sizeRange, stretchRange, colorInner, colorOuter, spawnSpeed],
   )
+
+  useFrame((_, delta) => {
+    uniforms.uTime.value += delta
+  })
 
   return (
     <points ref={pointsRef} frustumCulled={false}>
@@ -81,6 +92,7 @@ export default function SparksIgnaite({
           attach="attributes-aStretch"
           args={[attributes.stretches, 1]}
         />
+        <bufferAttribute attach="attributes-aSeed" args={[attributes.seeds, 1]} />
       </bufferGeometry>
       <shaderMaterial
         depthWrite={false}
@@ -91,19 +103,30 @@ export default function SparksIgnaite({
         vertexShader={/* glsl */ `
           uniform float uSizeMin;
           uniform float uSizeMax;
+          uniform float uTime;
+          uniform float uSpawnSpeed;
 
           attribute float aTilt;
           attribute float aHeat;
           attribute float aSize;
           attribute float aStretch;
+          attribute float aSeed;
 
           varying float vTilt;
           varying float vHeat;
           varying float vSize;
           varying float vStretch;
+          varying float vCycle;
 
           void main() {
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float cycle = fract(uTime * uSpawnSpeed + aSeed);
+            vec3 displaced = position;
+            displaced.y += cycle * 0.8;
+            float swirl = (cycle + aSeed) * 6.2831853;
+            displaced.x += sin(swirl) * 0.08;
+            displaced.z += cos(swirl) * 0.08;
+
+            vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
             float perspective = 1.0 / -mvPosition.z;
             float baseSize = mix(uSizeMin, uSizeMax, aSize);
             gl_PointSize = baseSize * perspective * 600.0;
@@ -112,6 +135,7 @@ export default function SparksIgnaite({
             vHeat = aHeat;
             vSize = aSize;
             vStretch = aStretch;
+            vCycle = cycle;
 
             gl_Position = projectionMatrix * mvPosition;
           }
@@ -126,6 +150,7 @@ export default function SparksIgnaite({
           varying float vHeat;
           varying float vSize;
           varying float vStretch;
+          varying float vCycle;
 
           void main() {
             vec2 coord = gl_PointCoord - vec2(0.5);
@@ -147,7 +172,10 @@ export default function SparksIgnaite({
 
             float rim = smoothstep(0.35, 0.0, dist);
             vec3 color = mix(uColorInner, uColorOuter, vHeat) * (0.6 + rim * 0.5);
-            gl_FragColor = vec4(color, alpha);
+            float birth = smoothstep(0.02, 0.2, vCycle);
+            float fade = smoothstep(1.0, 0.65, vCycle);
+            float life = birth * fade;
+            gl_FragColor = vec4(color, alpha * life);
           }
         `}
       />
